@@ -1,0 +1,24 @@
+[project]
+name = "ethoscraper"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Maybol283",email = "126118241+Maybol283@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "scrapy (>=2.13.2,<3.0.0)",
+    "pandas (>=2.3.0,<3.0.0)",
+    "typer (>=0.16.0,<0.17.0)",
+    "pydantic-yaml (>=1.5.1,<2.0.0)",
+    "requests (>=2.32.4,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "ethoscraper", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
