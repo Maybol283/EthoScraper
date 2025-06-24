@@ -12,12 +12,16 @@ dependencies = [
     "pandas (>=2.3.0,<3.0.0)",
     "typer (>=0.16.0,<0.17.0)",
     "pydantic-yaml (>=1.5.1,<2.0.0)",
-    "requests (>=2.32.4,<3.0.0)"
+    "requests (>=2.32.4,<3.0.0)",
+    "pyyaml (>=6.0.2,<7.0.0)"
 ]
 
 [tool.poetry]
 packages = [{include = "ethoscraper", from = "src"}]
 
+
+[tool.poetry.group.dev.dependencies]
+rich = "^14.0.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
