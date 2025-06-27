@@ -22,12 +22,18 @@ examples_provided:
 legitimate_interest_assessment:
   required: true
   purpose_test:
-    response: "The purpose is to gather publicly available contact information of academic researchers for a study on institutional collaboration trends."
+    why_scraping: "To analyse trends in how UK residents discuss local air-quality measures on publicly available newspaper comment sections and community forums."
+    benefit_to_organisation: "Peer-reviewed publications and REF impact case-study; Evidence base for grant applications on urban pollution mitigation."
+    third_party_benefits: "Local authorities and campaign groups gain anonymised insights into public sentiment for policy design."
+    public_societal_benefits: "Better-targeted public-health messaging and environmental interventions."
+    if_couldnt_process: "We would rely on expensive, limited survey panels, missing authentic grassroots discourse."
+    positive_outcome_individuals: "Voices expressed in small regional outlets are surfaced to policy-makers, potentially improving neighbourhood air quality."
+    ethical_issues: "Risk of re-identifying individuals from small forums. Mitigated by aggregating data, removing usernames, and focusing on themes rather than individual opinions."
   necessity_test:
     response: "It is not possible to achieve the research goal without processing names and institutional affiliations, which are personal data. We will not collect any data beyond this."
-balancing_test:
-  response: "Yes, the data is publicly available professional information. The processing is low-risk and does not infringe on their fundamental rights. The benefit to academic research is substantial."
-outcome: "Proceed" # Reflects that the user did not choose to exit the process.
+  balancing_test:
+    response: "Yes, the data is publicly available professional information. The processing is low-risk and does not infringe on their fundamental rights. The benefit to academic research is substantial."
+  outcome: "Proceed" # Reflects that the user did not choose to exit the process.
 
 # --- Data Processing ---
 pseudonymised_fields:

@@ -1,0 +1,49 @@
+# target.yaml  –  dual-export configuration
+job_name: "Test"
+
+# Edit the start_urls to the specific endpoint you want to scrape
+start_urls:
+- "https://amazon.com/item?=*FILL*"
+
+Fill:
+- 1
+-2
+-3
+
+extract_fields:
+  # Each selector collects openly published professional details
+  name: 
+    element: "h2"
+    class: "profile-name"
+    type: "string"
+    process: "strip"
+ 
+  title: 
+    element: ".profile-role"
+    class: "profile-role"
+    type: "string"
+    process: "strip"
+ 
+  email: 
+    element: "a[href^='mailto:']"
+    class: "profile-email"
+    type: "string"
+    process: "replace: 'mailto:', """
+ 
+  research_area: 
+    element: "li"
+    class: ""
+    type: "string"
+    process: "strip"
+
+  url: "response.url"
+
+  
+  placeholder_value: "[redacted]" # This is the value that will be used to replace data that fails ethical tests
+
+  pseudonymise:
+    email: "SHA256:8"
+    url: "Stub"
+
+output:
+  file: "./output/uni-staff-directory-2025.csv"
