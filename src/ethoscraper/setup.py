@@ -18,7 +18,7 @@ import urllib.error
 import ssl
 import yaml
 from datetime import datetime
-
+import time
 
 # ──────────────────────────────────────────────────────────────────────────────
 # URL and robots.txt utilities
@@ -74,6 +74,11 @@ def fetch_and_display_robots(target_url: str, ua: str = "*") -> dict:
         "",
     ]
     print("\n".join(lines))
+    
+    # Give user time to read robots.txt info
+    input("Press Enter to continue...")
+    print()
+    
     return summary
 
 
@@ -176,6 +181,56 @@ def confirm_proceed() -> bool:
         confirmed = input("Please enter 'y' or 'n': ").strip().lower()
     return confirmed == "y"
 # ──────────────────────────────────────────────────────────────────────────────
+# YAML Helper Functions
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _write_to_compliance_yaml(compliance_path: Path, section_path: str, data: dict) -> None:
+    """
+    Write data to a specific section in the compliance.yaml file.
+    
+    Args:
+        compliance_path: Path to the compliance.yaml file
+        section_path: Dot-separated path to the section (e.g., "legitimate_interest_assessment.purpose_test")
+        data: Dictionary of data to write to that section
+    """
+    # Load existing YAML
+    try:
+        with open(compliance_path, 'r', encoding='utf-8') as f:
+            compliance_data = yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f"Warning: {compliance_path} not found. Cannot write answers to compliance file.")
+        return
+    except Exception as e:
+        print(f"Error reading {compliance_path}: {e}")
+        return
+    
+    # Navigate to the correct section
+    current_section = compliance_data
+    path_parts = section_path.split('.')
+    
+    # Navigate to the parent section
+    for part in path_parts[:-1]:
+        if part not in current_section:
+            current_section[part] = {}
+        current_section = current_section[part]
+    
+    # Set the final section
+    final_key = path_parts[-1]
+    if final_key not in current_section:
+        current_section[final_key] = {}
+    
+    # Update with new data
+    current_section[final_key].update(data)
+    
+    # Write back to file
+    try:
+        with open(compliance_path, 'w', encoding='utf-8') as f:
+            yaml.dump(compliance_data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    except Exception as e:
+        print(f"Error writing to {compliance_path}: {e}")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Data Protection Impact Assessment
 # ──────────────────────────────────────────────────────────────────────────────
 def dpia_screening() -> tuple[bool, list[str]]:
@@ -189,7 +244,13 @@ def dpia_screening() -> tuple[bool, list[str]]:
           "  • Systematic monitoring of public space,\n"
           "a DPIA is always required.\n"
           "Otherwise, two or more Yes answers also trigger a DPIA.\n")
-
+    time.sleep(5)
+    print("Are you ready to proceed? (y/n): ")
+    proceed = input().strip().lower()
+    if proceed == "n":
+        print("Please run the DPIA screening again when you are ready.")
+        return False, []
+    
     criteria = {
         "evaluation_scoring":      "1. Evaluation or scoring / profiling?",
         "automated_decisions":     "2. Automated decisions with legal or similarly significant effect?",
@@ -256,15 +317,28 @@ def dpia_screening() -> tuple[bool, list[str]]:
         bool(hard_triggers & set(flagged))      # any hard trigger
         or len(flagged) >= 2                    # or two-criteria rule
     )
+    
+    print(f"\n✅ DPIA screening questions complete!")
+    print(f"Flagged criteria: {len(flagged)} out of 9")
+    if flagged:
+        print(f"Flagged areas: {', '.join(flagged)}")
+    
+    input("Press Enter to see the DPIA assessment result...")
 
     return needs_dpia, flagged
 # ──────────────────────────────────────────────────────────────────────────────
 # Legitimate Interest Assessment
 # ──────────────────────────────────────────────────────────────────────────────
 
-def purpose_test(target_url: str) -> list[str]:
+def purpose_test(target_url: str, compliance_path: Path) -> list[str]:
     """Test if the purpose of the project is legitimate."""
-    print(f"Testing if the purpose of the project is legitimate for {target_url} \n")
+    print(f"=== PURPOSE TEST ===")
+    print(f"Testing if the purpose of the project is legitimate for {target_url}")
+    print("\nThis test examines whether your purposes are legitimate and lawful.")
+    print("You'll be asked 7 questions with examples provided for each.\n")
+    
+    input("Press Enter when ready to begin the Purpose Test...")
+    print()
     
     questions = {
         "purpose_why": "1. Why are you scraping this website?",
@@ -311,7 +385,20 @@ def purpose_test(target_url: str) -> list[str]:
         ]
     }
     
+    # Map question keys to YAML field names
+    yaml_keys = {
+        "purpose_why": "why_scraping",
+        "benefit_org": "benefit_to_organisation", 
+        "third_party": "third_party_benefits",
+        "public_benefit": "public_societal_benefits",
+        "no_process": "if_couldnt_process",
+        "positive_outcome": "positive_outcome_individuals",
+        "ethical_issues": "ethical_issues"
+    }
+    
     answers = []
+    collected_answers = {}
+    
     for key, question in questions.items():
         print("\nEXAMPLE:")
         for line in examples[key]:
@@ -319,13 +406,25 @@ def purpose_test(target_url: str) -> list[str]:
         print()
         answer = input(f"{question} ")
         answers.append(answer)
+        collected_answers[yaml_keys[key]] = answer
     
-    print(f"All answers have been recorded and can be edited in compliance.yaml")
+    # Write answers to compliance.yaml
+    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.purpose_test", collected_answers)
+    
+    print(f"✅ Purpose Test complete! All answers have been recorded and written to compliance.yaml")
+    input("Press Enter to finish the Purpose Test...")
     return answers
 
-def necessity_test(target_url: str) -> list[str]:
+def necessity_test(target_url: str, compliance_path: Path) -> list[str]:
     """Test if the data processing is necessary and proportionate."""
-    print(f"Testing if the data processing is necessary for {target_url} \n")
+    print(f"=== NECESSITY TEST ===")
+    print(f"Testing if the data processing is necessary for {target_url}")
+    print("\nThis test examines whether the processing is necessary to achieve your purpose")
+    print("and whether you could achieve the same result in a less intrusive way.")
+    print("You'll be asked 4 key questions with examples.\n")
+    
+    input("Press Enter when ready to begin the Necessity Test...")
+    print()
     
     questions = {
         "helps_achieve": "1. Will the processing actually help you achieve your purpose?",
@@ -358,6 +457,8 @@ def necessity_test(target_url: str) -> list[str]:
     }
     
     answers = []
+    collected_responses = []
+    
     for key, question in questions.items():
         print("\nEXAMPLE:")
         for line in examples[key]:
@@ -365,15 +466,36 @@ def necessity_test(target_url: str) -> list[str]:
         print()
         answer = input(f"{question} ")
         answers.append(answer)
+        collected_responses.append(answer)
     
-    print(f"All answers have been recorded and can be edited in compliance.yaml")
+    # Combine all responses into a single response field as per template structure
+    combined_response = " ".join(collected_responses)
+    
+    # Write answers to compliance.yaml
+    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.necessity_test", {"response": combined_response})
+    
+    print(f"✅ Necessity Test complete! All answers have been recorded and written to compliance.yaml")
+    input("Press Enter to finish the Necessity Test...")
     return answers
 
-def balance_test(target_url: str) -> list[str]:
+def balance_test(target_url: str, compliance_path: Path) -> list[str]:
     """Test if the data processing is balanced."""
-    print(f"Testing if the data processing is balanced for {target_url} \n")
+    print(f"=== BALANCING TEST ===")
+    print(f"Testing if the data processing is balanced for {target_url}")
+    print("\nThis test weighs your legitimate interests against the individuals' interests,")
+    print("fundamental rights and freedoms. It has two main sections:")
+    print("1. Nature of the Data - What type of data are you processing?")
+    print("2. Reasonable Expectations - What would individuals reasonably expect?\n")
+    
+    input("Press Enter when ready to begin the Balancing Test...")
+    print()
+    
     print("=== NATURE OF THE DATA ===\n")
-    print("Please answer with Yes (Y) or No (N) \n")
+    print("First, let's examine the nature of the data you're processing.")
+    print("Please answer with Yes (Y) or No (N)\n")
+    
+    input("Press Enter to continue with the Nature of Data questions...")
+    print()
     
     # Nature of Data questions
     nature_questions = {
@@ -414,6 +536,8 @@ def balance_test(target_url: str) -> list[str]:
     }
     
     nature_answers = []
+    collected_responses = []
+    
     for key, question in nature_questions.items():
         if key in nature_examples:
             print("\nEXAMPLE:")
@@ -432,10 +556,17 @@ def balance_test(target_url: str) -> list[str]:
             answer = input(f"Please specify which {key.replace('_', ' ')} you are processing: ")
         
         nature_answers.append(answer)
+        collected_responses.append(f"{question} {answer}")
     
     # Reasonable Expectations section
     print("\n=== REASONABLE EXPECTATIONS ===\n")
-    print("Please provide detailed answers \n")
+    print("Now let's examine what individuals would reasonably expect.")
+    print("This section looks at the relationship you have with individuals,")
+    print("how the data was collected, and what they were told.")
+    print("Please provide detailed answers.\n")
+    
+    input("Press Enter to continue with the Reasonable Expectations questions...")
+    print()
     
     expectations_questions = {
         "existing_relationship": "1. Do you have an existing relationship with the individuals whose data you're processing? If so, what is the nature of that relationship?",
@@ -510,15 +641,142 @@ def balance_test(target_url: str) -> list[str]:
         print()
         answer = input(f"{question} ")
         expectations_answers.append(answer)
+        collected_responses.append(f"{question} {answer}")
     
+    # Combine all responses into a single response field as per template structure
+    combined_response = " ".join(collected_responses)
+    
+    # Write answers to compliance.yaml
+    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.balancing_test", {"response": combined_response})
+    
+    print(f"✅ Balancing Test complete! All answers have been recorded and written to compliance.yaml")
+    input("Press Enter to finish the Balancing Test...")
     return nature_answers + expectations_answers
+
+# ──────────────────────────────────────────────────────────────────────────────
+# LIA Wizard
+# ──────────────────────────────────────────────────────────────────────────────
+
+def run_lia_wizard(project_dir: Path, target_url: str) -> None:
+    """
+    Run the complete Legitimate Interest Assessment wizard.
+    
+    Args:
+        project_dir: Path to the project directory
+        target_url: The target URL being assessed
+    """
+    compliance_path = project_dir / "output" / "compliance.yaml"
+    
+    if not compliance_path.exists():
+        print(f"Error: compliance.yaml not found at {compliance_path}")
+        print("Please run the project setup first.")
+        return
+    
+    print("\n\n=== LEGITIMATE INTEREST ASSESSMENT WIZARD ===\n")
+    print("This wizard will guide you through the three main tests:")
+    print("1. Purpose Test - Is your purpose legitimate?")
+    print("2. Necessity Test - Is processing necessary?")
+    print("3. Balancing Test - Do your interests override individuals' rights?\n")
+    
+    print("Are you ready to proceed? (y/n): ")
+    proceed = input().strip().lower()
+    if proceed == "n":
+        print("Please rerun the wizard again when you are ready.")
+        return False, []
+    
+    # Run DPIA screening first
+    print("First,let's check if a DPIA (Data Protection Impact Assessment) is required...\n")
+    dpia_required, flagged_criteria = dpia_screening()
+    
+    # Write DPIA results to compliance.yaml
+    dpia_data = {
+        "required": dpia_required,
+        "flagged_criteria": flagged_criteria
+    }
+    _write_to_compliance_yaml(compliance_path, "dpia_screening", dpia_data)
+    
+    if dpia_required:
+        print(f"\n⚠️  DPIA is REQUIRED based on the flagged criteria: {', '.join(flagged_criteria)}")
+        print("You should conduct a full DPIA before proceeding.\n")
+        input("Press Enter to continue with the LIA assessment...")
+    else:
+        print(f"\n✅ DPIA is not required based on current assessment.\n")
+        input("Press Enter to continue with the LIA assessment...")
+    
+    # Continue with LIA tests
+    print("Now proceeding with the Legitimate Interest Assessment...\n")
+    
+    # Run the three tests
+    print("=" * 50)
+    purpose_test(target_url, compliance_path)
+    
+    print("\n" + "=" * 50)
+    print("Moving to the next test...")
+    input("Press Enter to continue to the Necessity Test...")
+    print()
+    necessity_test(target_url, compliance_path)
+    
+    print("\n" + "=" * 50)
+    print("Moving to the final test...")
+    input("Press Enter to continue to the Balancing Test...")
+    print()
+    balance_test(target_url, compliance_path)
+    
+    # Final assessment
+    print("\n" + "=" * 50)
+    print("=== LIA ASSESSMENT COMPLETE ===")
+    print(f"All answers have been written to: {compliance_path}")
+    print("\nPlease review the compliance.yaml file and make any necessary adjustments.")
+    print("You may now proceed with your data processing activities.")
+    
+    input("\nPress Enter to finish the LIA wizard...")
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Main orchestration
 # ──────────────────────────────────────────────────────────────────────────────
 
+def run_wizard_for_existing_project() -> None:
+    """Run the LIA wizard for an existing project in the current directory."""
+    # Look for target.yaml to get project info
+    target_yaml_path = Path("target.yaml")
+    if not target_yaml_path.exists():
+        print("Error: target.yaml not found in current directory.")
+        print("Please run this from a project directory or run the main setup first.")
+        return
+    
+    try:
+        with open(target_yaml_path, 'r', encoding='utf-8') as f:
+            target_data = yaml.safe_load(f)
+        
+        # Extract target URL from the first URL in the list
+        target_urls = target_data.get('target_urls', [])
+        if not target_urls:
+            print("Error: No target URLs found in target.yaml")
+            return
+        
+        target_url = target_urls[0]  # Use the first URL
+        project_dir = Path(".")
+        
+        print(f"Running LIA wizard for project in: {project_dir.resolve()}")
+        print(f"Target URL: {target_url}\n")
+        
+        run_lia_wizard(project_dir, target_url)
+        
+    except Exception as e:
+        print(f"Error reading target.yaml: {e}")
+        return
+
+
 def main() -> None:  # pragma: no cover
     """Main setup workflow orchestration."""
+    import sys
+    
+    # Check if user wants to run the LIA wizard directly
+    if len(sys.argv) > 1 and sys.argv[1] == "--lia-wizard":
+        run_wizard_for_existing_project()
+        return
+    
     try:
         # Get user inputs
         project_name, target_url = get_user_inputs()
@@ -538,7 +796,14 @@ def main() -> None:  # pragma: no cover
         # Copy and customize template files
         copy_and_customize_templates(target_dir, output_dir, project_name, target_url)
         
-        print(f"Project successfully setup in {target_dir.resolve()}, Please enter the folder and run the LIA wizard to complete the project setup.")
+        print(f"\nProject successfully setup in {target_dir.resolve()}")
+        proceed = input("Would you like to run the LIA wizard now? (y/n): ")
+        if proceed == "y":
+            run_lia_wizard(target_dir, target_url)
+        else:
+            print(f"To complete the setup, run the LIA wizard:")
+            print(f"  cd {target_dir}")
+            print(f"  python -m ethoscraper.setup --lia-wizard")
         
     except FileExistsError:
         return  # Already handled in create_project_structure
