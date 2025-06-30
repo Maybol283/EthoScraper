@@ -1,0 +1,55 @@
+target_url: https://google.com
+project_name: Test
+report_timestamp: '2025-06-30T08:40:26.071413'
+pre_checks:
+  cache_status: miss
+  robots_txt_confirmed: true
+data_assessment:
+  category: Personal Data
+examples_provided:
+- names/location/contact information
+dpia_screening:
+  required: true
+  flagged_criteria:
+  - evaluation_scoring
+  - automated_decisions
+legitimate_interest_assessment:
+  required: true
+  purpose_test:
+    why_scraping: blah
+    benefit_to_organisation: blah
+    third_party_benefits: blah blah
+    public_societal_benefits: blah blah blah
+    if_couldnt_process: a
+    positive_outcome_individuals: a
+    ethical_issues: a
+  necessity_test:
+    will_processing_help_achieve_purpose: y
+    is_processing_proportionate: y
+    can_achieve_without_processing: n
+    can_achieve_less_intrusively: n
+  balancing_test:
+    processing_special_category_data: y
+    processing_criminal_data: n
+    processing_private_data: n
+    processing_vulnerable_data: n
+    data_personal_or_professional_capacity: personal
+    existing_relationship_with_individuals: 'no'
+    past_data_usage: I haven't
+    data_collected_directly_from_individuals: 'no'
+    what_told_individuals_at_collection: not applicable
+    third_party_disclosure_about_reuse: the websites terms of service
+    data_collection_age_and_context_changes: abotu to collect
+    purpose_and_method_obvious_or_understood: 'yes'
+    using_innovative_processing_methods: 'no'
+    evidence_about_individual_expectations: ']yes'
+    other_factors_affecting_expectations: 'no'
+  outcome: Proceed
+pseudonymised_fields:
+  email: SHA256
+  url: Stub
+columns_dropped:
+- name
+final_outcome:
+  decision: Proceed with scraping
+  timestamp: '2025-06-13T10:51:21Z'

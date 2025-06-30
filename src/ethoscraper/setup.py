@@ -219,8 +219,9 @@ def _write_to_compliance_yaml(compliance_path: Path, section_path: str, data: di
     if final_key not in current_section:
         current_section[final_key] = {}
     
-    # Update with new data
-    current_section[final_key].update(data)
+    # Create sections using keys as names
+    for key, value in data.items():
+        current_section[final_key][key] = value
     
     # Write back to file
     try:
@@ -456,8 +457,16 @@ def necessity_test(target_url: str, compliance_path: Path) -> list[str]:
         ]
     }
     
+    # Map question keys to YAML field names
+    yaml_keys = {
+        "helps_achieve": "will_processing_help_achieve_purpose",
+        "proportionate": "is_processing_proportionate",
+        "achieve_without": "can_achieve_without_processing",
+        "less_intrusive": "can_achieve_less_intrusively"
+    }
+    
     answers = []
-    collected_responses = []
+    collected_answers = {}
     
     for key, question in questions.items():
         print("\nEXAMPLE:")
@@ -466,13 +475,10 @@ def necessity_test(target_url: str, compliance_path: Path) -> list[str]:
         print()
         answer = input(f"{question} ")
         answers.append(answer)
-        collected_responses.append(answer)
-    
-    # Combine all responses into a single response field as per template structure
-    combined_response = " ".join(collected_responses)
+        collected_answers[yaml_keys[key]] = answer
     
     # Write answers to compliance.yaml
-    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.necessity_test", {"response": combined_response})
+    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.necessity_test", collected_answers)
     
     print(f"✅ Necessity Test complete! All answers have been recorded and written to compliance.yaml")
     input("Press Enter to finish the Necessity Test...")
@@ -535,8 +541,17 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
         ]
     }
     
+    # Map nature question keys to YAML field names
+    nature_yaml_keys = {
+        "special_category": "processing_special_category_data",
+        "criminal_data": "processing_criminal_data",
+        "private_data": "processing_private_data",
+        "vulnerable_data": "processing_vulnerable_data",
+        "personal_or_professional": "data_personal_or_professional_capacity"
+    }
+    
     nature_answers = []
-    collected_responses = []
+    collected_answers = {}
     
     for key, question in nature_questions.items():
         if key in nature_examples:
@@ -556,7 +571,7 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             answer = input(f"Please specify which {key.replace('_', ' ')} you are processing: ")
         
         nature_answers.append(answer)
-        collected_responses.append(f"{question} {answer}")
+        collected_answers[nature_yaml_keys[key]] = answer
     
     # Reasonable Expectations section
     print("\n=== REASONABLE EXPECTATIONS ===\n")
@@ -633,6 +648,20 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
         ]
     }
     
+    # Map expectations question keys to YAML field names
+    expectations_yaml_keys = {
+        "existing_relationship": "existing_relationship_with_individuals",
+        "past_usage": "past_data_usage",
+        "collected_directly": "data_collected_directly_from_individuals",
+        "told_individuals": "what_told_individuals_at_collection",
+        "third_party_told": "third_party_disclosure_about_reuse",
+        "data_age_context": "data_collection_age_and_context_changes",
+        "obvious_purpose": "purpose_and_method_obvious_or_understood",
+        "innovative_processing": "using_innovative_processing_methods",
+        "evidence_expectations": "evidence_about_individual_expectations",
+        "other_factors": "other_factors_affecting_expectations"
+    }
+    
     expectations_answers = []
     for key, question in expectations_questions.items():
         print("\nEXAMPLE:")
@@ -641,13 +670,10 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
         print()
         answer = input(f"{question} ")
         expectations_answers.append(answer)
-        collected_responses.append(f"{question} {answer}")
-    
-    # Combine all responses into a single response field as per template structure
-    combined_response = " ".join(collected_responses)
+        collected_answers[expectations_yaml_keys[key]] = answer
     
     # Write answers to compliance.yaml
-    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.balancing_test", {"response": combined_response})
+    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.balancing_test", collected_answers)
     
     print(f"✅ Balancing Test complete! All answers have been recorded and written to compliance.yaml")
     input("Press Enter to finish the Balancing Test...")
@@ -705,6 +731,14 @@ def run_lia_wizard(project_dir: Path, target_url: str) -> None:
     
     # Continue with LIA tests
     print("Now proceeding with the Legitimate Interest Assessment...\n")
+    
+    # Initialize the LIA structure with empty subsections
+    lia_structure = {
+        "purpose_test": {},
+        "necessity_test": {},
+        "balancing_test": {}
+    }
+    _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment", lia_structure)
     
     # Run the three tests
     print("=" * 50)

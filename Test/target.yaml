@@ -1,0 +1,22 @@
+# target.yaml  –  dual-export configuration
+job_name: "Test"
+
+start_urls:
+- "https://google.com"
+
+extract_fields:
+  # Each selector collects openly published professional details
+  name: "h2.profile-name::text | strip"
+  title: ".profile-role:text | strip"
+  email: "a[href^='mailto:']::attr(href) | replace: 'mailto:', """
+  research_area: ".research-tags li::text | strip"
+  url: "response.url"
+
+  placeholder_value: "[redacted]" # This is the value that will be used to replace data that fails ethical tests
+
+  pseudonymise:
+    email: "SHA256:8"
+    url: "Stub"
+
+output:
+  file: "./output/uni-staff-directory-2025.csv"

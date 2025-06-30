@@ -25,10 +25,7 @@ dpia_screening:
 
 # This section is filled out if the data category is "Personal Data".
 legitimate_interest_assessment:
-  required: true
-  purpose_test:
-  necessity_test:
-  balancing_test:
+  required: false
   outcome: "Proceed" # Reflects that the user did not choose to exit the process.
 
 # --- Data Processing ---
