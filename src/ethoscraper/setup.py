@@ -341,73 +341,81 @@ def purpose_test(target_url: str, compliance_path: Path) -> list[str]:
     input("Press Enter when ready to begin the Purpose Test...")
     print()
     
-    questions = {
-        "purpose_why": "1. Why are you scraping this website?",
-        "benefit_org": "2. Benefit to our organisation?",
-        "third_party": "3. Third-party benefits?",
-        "public_benefit": "4. Wider public/societal benefits?",
-        "no_process": "5. What if we couldn't process?",
-        "positive_outcome": "6. Positive outcome for individuals?",
-        "ethical_issues": "7. Are there any ethical issues with the processing?"
-    }
-    
-    examples = {
-        "purpose_why": [
-            " To analyse trends in how UK residents discuss local",
-            " air-quality measures on publicly available newspaper",
-            " comment sections and community forums."
-        ],
-        "benefit_org": [
-            " Peer-reviewed publications and REF impact case-study;",
-            " Evidence base for grant applications on urban pollution",
-            " mitigation."
-        ],
-        "third_party": [
-            " Local authorities and campaign groups gain anonymised",
-            " insights into public sentiment for policy design."
-        ],
-        "public_benefit": [
-            " Better-targeted public-health messaging and",
-            " environmental interventions."
-        ],
-        "no_process": [
-            " We would rely on expensive, limited survey panels,",
-            " missing authentic grassroots discourse."
-        ],
-        "positive_outcome": [
-            " Voices expressed in small regional outlets are surfaced",
-            " to policy-makers, potentially improving neighbourhood",
-            " air quality."
-        ],
-        "ethical_issues": [
-            " Risk of re-identifying individuals from small forums.",
-            " Mitigated by aggregating data, removing usernames, and",
-            " focusing on themes rather than individual opinions."
-        ]
-    }
-    
-    # Map question keys to YAML field names
-    yaml_keys = {
-        "purpose_why": "why_scraping",
-        "benefit_org": "benefit_to_organisation", 
-        "third_party": "third_party_benefits",
-        "public_benefit": "public_societal_benefits",
-        "no_process": "if_couldnt_process",
-        "positive_outcome": "positive_outcome_individuals",
-        "ethical_issues": "ethical_issues"
+    # Purpose test questions - unified structure
+    purpose_data = {
+        "purpose_why": {
+            "question": "1. Why are you scraping this website?",
+            "yaml_key": "why_scraping",
+            "examples": [
+                " To analyse trends in how UK residents discuss local",
+                " air-quality measures on publicly available newspaper",
+                " comment sections and community forums."
+            ]
+        },
+        "benefit_org": {
+            "question": "2. Benefit to our organisation?",
+            "yaml_key": "benefit_to_organisation",
+            "examples": [
+                " Peer-reviewed publications and REF impact case-study;",
+                " Evidence base for grant applications on urban pollution",
+                " mitigation."
+            ]
+        },
+        "third_party": {
+            "question": "3. Third-party benefits?",
+            "yaml_key": "third_party_benefits",
+            "examples": [
+                " Local authorities and campaign groups gain anonymised",
+                " insights into public sentiment for policy design."
+            ]
+        },
+        "public_benefit": {
+            "question": "4. Wider public/societal benefits?",
+            "yaml_key": "public_societal_benefits",
+            "examples": [
+                " Better-targeted public-health messaging and",
+                " environmental interventions."
+            ]
+        },
+        "no_process": {
+            "question": "5. What if we couldn't process?",
+            "yaml_key": "if_couldnt_process",
+            "examples": [
+                " We would rely on expensive, limited survey panels,",
+                " missing authentic grassroots discourse."
+            ]
+        },
+        "positive_outcome": {
+            "question": "6. Positive outcome for individuals?",
+            "yaml_key": "positive_outcome_individuals",
+            "examples": [
+                " Voices expressed in small regional outlets are surfaced",
+                " to policy-makers, potentially improving neighbourhood",
+                " air quality."
+            ]
+        },
+        "ethical_issues": {
+            "question": "7. Are there any ethical issues with the processing?",
+            "yaml_key": "ethical_issues",
+            "examples": [
+                " Risk of re-identifying individuals from small forums.",
+                " Mitigated by aggregating data, removing usernames, and",
+                " focusing on themes rather than individual opinions."
+            ]
+        }
     }
     
     answers = []
     collected_answers = {}
     
-    for key, question in questions.items():
+    for key, data in purpose_data.items():
         print("\nEXAMPLE:")
-        for line in examples[key]:
+        for line in data["examples"]:
             print(line)
         print()
-        answer = input(f"{question} ")
+        answer = input(f"{data['question']} ")
         answers.append(answer)
-        collected_answers[yaml_keys[key]] = answer
+        collected_answers[data["yaml_key"]] = answer
     
     # Write answers to compliance.yaml
     _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.purpose_test", collected_answers)
@@ -427,55 +435,57 @@ def necessity_test(target_url: str, compliance_path: Path) -> list[str]:
     input("Press Enter when ready to begin the Necessity Test...")
     print()
     
-    questions = {
-        "helps_achieve": "1. Will the processing actually help you achieve your purpose?",
-        "proportionate": "2. Is the processing proportionate to that purpose?",
-        "achieve_without": "3. Can you achieve your purpose without processing the data, or by processing less data?",
-        "less_intrusive": "4. Can you achieve your purpose by processing the data in another more obvious or less intrusive way?"
-    }
-    
-    examples = {
-        "helps_achieve": [
-            " Yes, analysing public discourse requires processing the text",
-            " content and associated metadata to identify themes and",
-            " geographical patterns in air quality discussions."
-        ],
-        "proportionate": [
-            " The processing is proportionate - we only collect publicly",
-            " available comments and aggregate them for thematic analysis,",
-            " not individual profiling or intrusive monitoring."
-        ],
-        "achieve_without": [
-            " No, we cannot achieve meaningful trend analysis without",
-            " processing the text data. However, we limit collection to",
-            " relevant discussion threads only."
-        ],
-        "less_intrusive": [
-            " Alternative approaches like surveys would be less",
-            " representative and more intrusive. Public forum analysis",
-            " is the least invasive method for this research question."
-        ]
-    }
-    
-    # Map question keys to YAML field names
-    yaml_keys = {
-        "helps_achieve": "will_processing_help_achieve_purpose",
-        "proportionate": "is_processing_proportionate",
-        "achieve_without": "can_achieve_without_processing",
-        "less_intrusive": "can_achieve_less_intrusively"
+    # Necessity test questions - unified structure
+    necessity_data = {
+        "helps_achieve": {
+            "question": "1. Will the processing actually help you achieve your purpose?",
+            "yaml_key": "will_processing_help_achieve_purpose",
+            "examples": [
+                " Yes, analysing public discourse requires processing the text",
+                " content and associated metadata to identify themes and",
+                " geographical patterns in air quality discussions."
+            ]
+        },
+        "proportionate": {
+            "question": "2. Is the processing proportionate to that purpose?",
+            "yaml_key": "is_processing_proportionate",
+            "examples": [
+                " The processing is proportionate - we only collect publicly",
+                " available comments and aggregate them for thematic analysis,",
+                " not individual profiling or intrusive monitoring."
+            ]
+        },
+        "achieve_without": {
+            "question": "3. Can you achieve your purpose without processing the data, or by processing less data?",
+            "yaml_key": "can_achieve_without_processing",
+            "examples": [
+                " No, we cannot achieve meaningful trend analysis without",
+                " processing the text data. However, we limit collection to",
+                " relevant discussion threads only."
+            ]
+        },
+        "less_intrusive": {
+            "question": "4. Can you achieve your purpose by processing the data in another more obvious or less intrusive way?",
+            "yaml_key": "can_achieve_less_intrusively",
+            "examples": [
+                " Alternative approaches like surveys would be less",
+                " representative and more intrusive. Public forum analysis",
+                " is the least invasive method for this research question."
+            ]
+        }
     }
     
     answers = []
     collected_answers = {}
     
-    for key, question in questions.items():
+    for key, data in necessity_data.items():
         print("\nEXAMPLE:")
-        for line in examples[key]:
+        for line in data["examples"]:
             print(line)
         print()
-        answer = input(f"{question} ")
+        answer = input(f"{data['question']} ")
         answers.append(answer)
-        collected_answers[yaml_keys[key]] = answer
+        collected_answers[data["yaml_key"]] = answer
     
     # Write answers to compliance.yaml
     _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.necessity_test", collected_answers)
@@ -503,75 +513,81 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
     input("Press Enter to continue with the Nature of Data questions...")
     print()
     
-    # Nature of Data questions
-    nature_questions = {
-        "special_category": "1. Are you processing special category data (racial/ethnic origin, political opinions, religious/philosophical beliefs, \n trade union membership, genetic data, biometric data, health data, sex life, sexual orientation)?",
-        "criminal_data": "2. Are you processing criminal offence data (personal data relating to criminal convictions and offences or related security measures)?",
-        "private_data": "3. Are you processing particularly 'private' data (financial, intimate personal details)?",
-        "vulnerable_data": "4. Are you processing children's data or data from vulnerable individuals?",
-        "personal_or_professional": "5. Is the data about people in their personal or professional capacity?"
-    }
-    
-    # Examples for follow-up questions when answer is Yes
-    followup_examples = {
-        "criminal_data": [
-            " We are processing conviction data from court records. Data includes conviction",
-            " dates, offence types, and sentencing outcomes from publicly",
-            " available court databases."
-        ],
-        "private_data": [
-            " We are processing financial transaction data from bank",
-            " statements. Data includes",
-            " transaction amounts, merchant categories, and spending",
-            " patterns from anonymized customer records."
-        ],
-        "vulnerable_data": [
-            " We are processing educational records of children aged 13-16",
-            " Data includes test scores,",
-            " attendance records, and demographic information with parental",
-            " consent and school ethics approval."
-        ]
-    }
-    
-    nature_examples = {
-        "personal_or_professional": [
-            " Mixed - some comments may be from individuals in personal",
-            " capacity (residents discussing local air quality) and some",
-            " in professional capacity (officials, experts)."
-        ]
-    }
-    
-    # Map nature question keys to YAML field names
-    nature_yaml_keys = {
-        "special_category": "processing_special_category_data",
-        "criminal_data": "processing_criminal_data",
-        "private_data": "processing_private_data",
-        "vulnerable_data": "processing_vulnerable_data",
-        "personal_or_professional": "data_personal_or_professional_capacity"
+    # Nature of Data questions - unified structure
+    nature_data = {
+        "special_category": {
+            "question": "1. Are you processing special category data (racial/ethnic origin, political opinions, religious/philosophical beliefs, \n trade union membership, genetic data, biometric data, health data, sex life, sexual orientation)?",
+            "yaml_key": "processing_special_category_data",
+            "examples": None,
+            "followup_examples": None
+        },
+        "criminal_data": {
+            "question": "2. Are you processing criminal offence data (personal data relating to criminal convictions and offences or related security measures)?",
+            "yaml_key": "processing_criminal_data",
+            "examples": None,
+            "followup_examples": [
+                " We are processing conviction data from court records. Data includes conviction",
+                " dates, offence types, and sentencing outcomes from publicly",
+                " available court databases."
+            ]
+        },
+        "private_data": {
+            "question": "3. Are you processing particularly 'private' data (financial, intimate personal details)?",
+            "yaml_key": "processing_private_data",
+            "examples": None,
+            "followup_examples": [
+                " We are processing financial transaction data from bank",
+                " statements. Data includes",
+                " transaction amounts, merchant categories, and spending",
+                " patterns from anonymized customer records."
+            ]
+        },
+        "vulnerable_data": {
+            "question": "4. Are you processing children's data or data from vulnerable individuals?",
+            "yaml_key": "processing_vulnerable_data",
+            "examples": None,
+            "followup_examples": [
+                " We are processing educational records of children aged 13-16",
+                " Data includes test scores,",
+                " attendance records, and demographic information with parental",
+                " consent and school ethics approval."
+            ]
+        },
+        "personal_or_professional": {
+            "question": "5. Is the data about people in their personal or professional capacity?",
+            "yaml_key": "data_personal_or_professional_capacity",
+            "examples": [
+                " Mixed - some comments may be from individuals in personal",
+                " capacity (residents discussing local air quality) and some",
+                " in professional capacity (officials, experts)."
+            ],
+            "followup_examples": None
+        }
     }
     
     nature_answers = []
     collected_answers = {}
     
-    for key, question in nature_questions.items():
-        if key in nature_examples:
+    for key, data in nature_data.items():
+        # Show examples if available
+        if data["examples"]:
             print("\nEXAMPLE:")
-            for line in nature_examples[key]:
+            for line in data["examples"]:
                 print(line)
             print()
         
-        answer = input(f"{question} ")
+        answer = input(f"{data['question']} ")
         
         # Handle follow-up questions for Yes answers
-        if answer in ["Y", "Yes", "y", "yes"] and key in followup_examples:
+        if answer in ["Y", "Yes", "y", "yes"] and data["followup_examples"]:
             print("\nEXAMPLE:")
-            for line in followup_examples[key]:
+            for line in data["followup_examples"]:
                 print(line)
             print()
             answer = input(f"Please specify which {key.replace('_', ' ')} you are processing: ")
         
         nature_answers.append(answer)
-        collected_answers[nature_yaml_keys[key]] = answer
+        collected_answers[data["yaml_key"]] = answer
     
     # Reasonable Expectations section
     print("\n=== REASONABLE EXPECTATIONS ===\n")
@@ -583,94 +599,108 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
     input("Press Enter to continue with the Reasonable Expectations questions...")
     print()
     
-    expectations_questions = {
-        "existing_relationship": "1. Do you have an existing relationship with the individuals whose data you're processing? If so, what is the nature of that relationship?",
-        "past_usage": "2. How have you used their data in the past?",
-        "collected_directly": "3. Did you collect the data directly from the individuals?",
-        "told_individuals": "4. What did you tell individuals at the time of collection?",
-        "third_party_told": "5. If obtained from third party, what did they tell individuals about reuse by third parties?",
-        "data_age_context": "6. How long ago was the data collected and are there any relevant changes since then?",
-        "obvious_purpose": "7. Is your intended purpose and method obvious or widely understood?",
-        "innovative_processing": "8. Are you doing anything new or innovative with the data?",
-        "evidence_expectations": "9. Do you have evidence about expectations (market research, focus groups, consultation)?",
-        "other_factors": "10. Are there other factors that would affect whether individuals expect this processing?"
-    }
-    
-    expectations_examples = {
-        "existing_relationship": [
-            " No existing relationship - we are processing publicly",
-            " available comments from newspaper websites and forums",
-            " where individuals have no direct relationship with us."
-        ],
-        "past_usage": [
-            " This is the first time we are processing data from these",
-            " sources. We have not used their data previously."
-        ],
-        "collected_directly": [
-            " No, the data is collected from third-party websites",
-            " (newspaper comment sections and public forums) rather",
-            " than directly from individuals."
-        ],
-        "told_individuals": [
-            " Not applicable - we did not collect data directly from",
-            " individuals. The data comes from public forums and",
-            " newspaper comment sections."
-        ],
-        "third_party_told": [
-            " The website terms of service typically state that comments",
-            " may be used for research purposes or by third parties.",
-            " Forum policies generally allow academic research use."
-        ],
-        "data_age_context": [
-            " Data collection is current (within last 6 months).",
-            " No significant technological or contextual changes",
-            " since collection that would affect expectations."
-        ],
-        "obvious_purpose": [
-            " Academic research on public environmental discourse is",
-            " widely understood and accepted. The purpose of analyzing",
-            " public sentiment on air quality is straightforward."
-        ],
-        "innovative_processing": [
-            " The research methods are standard (thematic analysis",
-            " of public comments). We are not using novel AI techniques",
-            " or innovative processing methods."
-        ],
-        "evidence_expectations": [
-            " We conducted focus groups with 20 local residents who",
-            " confirmed they expect their public environmental comments",
-            " to be used for legitimate academic research."
-        ],
-        "other_factors": [
-            " The data subjects have chosen to post in public forums",
-            " about environmental issues, suggesting they expect public",
-            " visibility and potential research use of their comments."
-        ]
-    }
-    
-    # Map expectations question keys to YAML field names
-    expectations_yaml_keys = {
-        "existing_relationship": "existing_relationship_with_individuals",
-        "past_usage": "past_data_usage",
-        "collected_directly": "data_collected_directly_from_individuals",
-        "told_individuals": "what_told_individuals_at_collection",
-        "third_party_told": "third_party_disclosure_about_reuse",
-        "data_age_context": "data_collection_age_and_context_changes",
-        "obvious_purpose": "purpose_and_method_obvious_or_understood",
-        "innovative_processing": "using_innovative_processing_methods",
-        "evidence_expectations": "evidence_about_individual_expectations",
-        "other_factors": "other_factors_affecting_expectations"
+    # Reasonable Expectations questions - unified structure
+    expectations_data = {
+        "existing_relationship": {
+            "question": "1. Do you have an existing relationship with the individuals whose data you're processing? If so, what is the nature of that relationship?",
+            "yaml_key": "existing_relationship_with_individuals",
+            "examples": [
+                " No existing relationship - we are processing publicly",
+                " available comments from newspaper websites and forums",
+                " where individuals have no direct relationship with us."
+            ]
+        },
+        "past_usage": {
+            "question": "2. How have you used their data in the past?",
+            "yaml_key": "past_data_usage",
+            "examples": [
+                " This is the first time we are processing data from these",
+                " sources. We have not used their data previously."
+            ]
+        },
+        "collected_directly": {
+            "question": "3. Did you collect the data directly from the individuals?",
+            "yaml_key": "data_collected_directly_from_individuals",
+            "examples": [
+                " No, the data is collected from third-party websites",
+                " (newspaper comment sections and public forums) rather",
+                " than directly from individuals."
+            ]
+        },
+        "told_individuals": {
+            "question": "4. What did you tell individuals at the time of collection?",
+            "yaml_key": "what_told_individuals_at_collection",
+            "examples": [
+                " Not applicable - we did not collect data directly from",
+                " individuals. The data comes from public forums and",
+                " newspaper comment sections."
+            ]
+        },
+        "third_party_told": {
+            "question": "5. If obtained from third party, what did they tell individuals about reuse by third parties?",
+            "yaml_key": "third_party_disclosure_about_reuse",
+            "examples": [
+                " The website terms of service typically state that comments",
+                " may be used for research purposes or by third parties.",
+                " Forum policies generally allow academic research use."
+            ]
+        },
+        "data_age_context": {
+            "question": "6. How long ago was the data collected and are there any relevant changes since then?",
+            "yaml_key": "data_collection_age_and_context_changes",
+            "examples": [
+                " Data collection is current (within last 6 months).",
+                " No significant technological or contextual changes",
+                " since collection that would affect expectations."
+            ]
+        },
+        "obvious_purpose": {
+            "question": "7. Is your intended purpose and method obvious or widely understood?",
+            "yaml_key": "purpose_and_method_obvious_or_understood",
+            "examples": [
+                " Academic research on public environmental discourse is",
+                " widely understood and accepted. The purpose of analyzing",
+                " public sentiment on air quality is straightforward."
+            ]
+        },
+        "innovative_processing": {
+            "question": "8. Are you doing anything new or innovative with the data?",
+            "yaml_key": "using_innovative_processing_methods",
+            "examples": [
+                " The research methods are standard (thematic analysis",
+                " of public comments). We are not using novel AI techniques",
+                " or innovative processing methods."
+            ]
+        },
+        "evidence_expectations": {
+            "question": "9. Do you have evidence about expectations (market research, focus groups, consultation)?",
+            "yaml_key": "evidence_about_individual_expectations",
+            "examples": [
+                " We conducted focus groups with 20 local residents who",
+                " confirmed they expect their public environmental comments",
+                " to be used for legitimate academic research."
+            ]
+        },
+        "other_factors": {
+            "question": "10. Are there other factors that would affect whether individuals expect this processing?",
+            "yaml_key": "other_factors_affecting_expectations",
+            "examples": [
+                " The data subjects have chosen to post in public forums",
+                " about environmental issues, suggesting they expect public",
+                " visibility and potential research use of their comments."
+            ]
+        }
     }
     
     expectations_answers = []
-    for key, question in expectations_questions.items():
+    for key, data in expectations_data.items():
         print("\nEXAMPLE:")
-        for line in expectations_examples[key]:
+        for line in data["examples"]:
             print(line)
         print()
-        answer = input(f"{question} ")
+        answer = input(f"{data['question']} ")
         expectations_answers.append(answer)
-        collected_answers[expectations_yaml_keys[key]] = answer
+        collected_answers[data["yaml_key"]] = answer
     
     # Write answers to compliance.yaml
     _write_to_compliance_yaml(compliance_path, "legitimate_interest_assessment.balancing_test", collected_answers)
