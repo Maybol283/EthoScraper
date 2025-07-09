@@ -14,7 +14,7 @@ The Ethical Scraper is designed to perform web scraping in an ethical manner, en
   
 - **Legitimate Interest Assessment (LIA)**: Users answer a series of questions to assess if scraping activities align with legitimate interests under GDPR and similar regulations.
   
-- **Confidence Rating**: Uses inputs from LIA to generate a confidence rating using a Legal Language Model (LLM) before proceeding with scraping activities.
+- **Confidence Rating**: Uses inputs from LIA to generate a confidence rating using a Legal Language Model (LLM) to help inform users before proceeding with scraping activities.
 
 ## Installation
 
