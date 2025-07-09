@@ -3,6 +3,7 @@
 ## Overview
 
 The Ethical Scraper is designed to perform web scraping in an ethical manner, ensuring compliance with legal and ethical standards. It includes features for initial domain scanning, DPIA screening, and Legitimate Interest Assessment (LIA) to determine the ethical viability of scraping activities.
+The tool aims to provide assistance to legitimate use cases of scraping and removing the barrier entry in gathering data for researchers and professionals while remaining GDPR compliant.
 
 ## Features
 
