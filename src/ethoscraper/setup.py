@@ -519,7 +519,11 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             "question": "1. Are you processing special category data (racial/ethnic origin, political opinions, religious/philosophical beliefs, \n trade union membership, genetic data, biometric data, health data, sex life, sexual orientation)?",
             "yaml_key": "processing_special_category_data",
             "examples": None,
-            "followup_examples": None
+            "followup_examples": [
+                " We are processing health data from patient medical records that include",
+                " diagnoses, treatment histories, and genetic test results for individuals",
+                " participating in a clinical research study."
+            ]
         },
         "criminal_data": {
             "question": "2. Are you processing criminal offence data (personal data relating to criminal convictions and offences or related security measures)?",
@@ -561,7 +565,11 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
                 " capacity (residents discussing local air quality) and some",
                 " in professional capacity (officials, experts)."
             ],
-            "followup_examples": None
+            "followup_examples": [
+                " The data includes both personal capacity individuals (local residents",
+                " discussing environmental concerns in their neighborhoods) and professional",
+                " capacity individuals (environmental officials, scientists, policy makers)."
+            ]
         }
     }
     
@@ -576,18 +584,21 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
                 print(line)
             print()
         
-        answer = input(f"{data['question']} ")
+        initial_answer = input(f"{data['question']} ")
         
-        # Handle follow-up questions for Yes answers
-        if answer in ["Y", "Yes", "y", "yes"] and data["followup_examples"]:
+        # Always ask for expansion when someone answers yes
+        if initial_answer in ["Y", "Yes", "y", "yes"]:
             print("\nEXAMPLE:")
             for line in data["followup_examples"]:
                 print(line)
             print()
-            answer = input(f"Please specify which {key.replace('_', ' ')} you are processing: ")
+            detailed_answer = input(f"Please describe the affected group and specify what type of {key.replace('_', ' ')} you are processing: ")
+            final_answer = detailed_answer
+        else:
+            final_answer = "No" if initial_answer in ["N", "No", "n", "no"] else initial_answer
         
-        nature_answers.append(answer)
-        collected_answers[data["yaml_key"]] = answer
+        nature_answers.append(final_answer)
+        collected_answers[data["yaml_key"]] = final_answer
     
     # Reasonable Expectations section
     print("\n=== REASONABLE EXPECTATIONS ===\n")
@@ -728,18 +739,6 @@ def run_lia_wizard(project_dir: Path, target_url: str) -> None:
         print("Please run the project setup first.")
         return
     
-    print("\n\n=== LEGITIMATE INTEREST ASSESSMENT WIZARD ===\n")
-    print("This wizard will guide you through the three main tests:")
-    print("1. Purpose Test - Is your purpose legitimate?")
-    print("2. Necessity Test - Is processing necessary?")
-    print("3. Balancing Test - Do your interests override individuals' rights?\n")
-    
-    print("Are you ready to proceed? (y/n): ")
-    proceed = input().strip().lower()
-    if proceed == "n":
-        print("Please rerun the wizard again when you are ready.")
-        return False, []
-    
     # Run DPIA screening first
     print("First,let's check if a DPIA (Data Protection Impact Assessment) is required...\n")
     dpia_required, flagged_criteria = dpia_screening()
@@ -753,14 +752,35 @@ def run_lia_wizard(project_dir: Path, target_url: str) -> None:
     
     if dpia_required:
         print(f"\n⚠️  DPIA is REQUIRED based on the flagged criteria: {', '.join(flagged_criteria)}")
-        print("You should conduct a full DPIA before proceeding.\n")
-        input("Press Enter to continue with the LIA assessment...")
+        print("You should conduct a full DPIA before proceeding with scraping.\n")
+        print("While the LIA is a good start, it is not a substitute for a full DPIA\nwhich will require a more detailed consulation with experts.\n")
+        print("For more information on DPIAs, please refer to the GDPR and the UK DPA.\n")
+        print("You can find the full text of the GDPR and the UK DPA at the following links:")
+        print("https://gdpr.eu/gdpr-guide/") # TODO: add links to the GDPR and the UK DPA
+        print("https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/how-do-we-do-a-dpia/")
+        answer = input("Completing an LIA and will assist you in the DPIA process in the future. \n Do you want to proceed with the LIA assessment? (y/n): ")
+        if answer.strip().lower() == "n":
+            print("Please rerun the wizard again when you are ready.")
+            return False, []
+        else:
+            print("Proceeding with the LIA assessment...\n")
     else:
         print(f"\n✅ DPIA is not required based on current assessment.\n")
         input("Press Enter to continue with the LIA assessment...")
     
     # Continue with LIA tests
     print("Now proceeding with the Legitimate Interest Assessment...\n")
+    print("\n\n=== LEGITIMATE INTEREST ASSESSMENT WIZARD ===\n")
+    print("This wizard will guide you through the three main tests:")
+    print("1. Purpose Test - Is your purpose legitimate?")
+    print("2. Necessity Test - Is processing necessary?")
+    print("3. Balancing Test - Do your interests override individuals' rights?\n")
+    
+    print("Are you ready to proceed? (y/n): ")
+    proceed = input().strip().lower()
+    if proceed == "n":
+        print("Please rerun the wizard again when you are ready.")
+        return False, []
     
     # Initialize the LIA structure with empty subsections
     lia_structure = {

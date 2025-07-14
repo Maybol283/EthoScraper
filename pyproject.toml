@@ -13,7 +13,9 @@ dependencies = [
     "typer (>=0.16.0,<0.17.0)",
     "pydantic-yaml (>=1.5.1,<2.0.0)",
     "requests (>=2.32.4,<3.0.0)",
-    "pyyaml (>=6.0.2,<7.0.0)"
+    "pyyaml (>=6.0.2,<7.0.0)",
+    "openai (>=1.95.1,<2.0.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)"
 ]
 
 [tool.poetry]
