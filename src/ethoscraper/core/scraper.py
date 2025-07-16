@@ -29,35 +29,21 @@ class EthicalSpider(CrawlSpider):
     
     name = 'ethical_spider'
     
-    # Default settings - can be overridden
-    custom_settings = {
-        'ROBOTSTXT_OBEY': True,
-        'DOWNLOAD_DELAY': 1,  # 1 second delay between requests
-        'RANDOMIZE_DOWNLOAD_DELAY': 0.5,  # Random delay (0.5 * to 1.5 * DOWNLOAD_DELAY)
-        'CONCURRENT_REQUESTS': 1,  # Be respectful - only 1 concurrent request
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        'AUTOTHROTTLE_ENABLED': True,
-        'AUTOTHROTTLE_START_DELAY': 1,
-        'AUTOTHROTTLE_MAX_DELAY': 10,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
-        'USER_AGENT': 'EthoScraper/1.0 (+https://github.com/maybol283/ethoscraper)',
-        'HTTPCACHE_ENABLED': True,
-        'HTTPCACHE_EXPIRATION_SECS': 3600,  # Cache for 1 hour
-    }
-    
-    def __init__(self, target_file: str = None, compliance_file: str = None, 
-                 max_pages: int = 10, *args, **kwargs):
+    def __init__(self, target_file: str = None, max_pages: int = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
         # Core configuration
         self.target_file = target_file
-        self.compliance_file = compliance_file
-        self.max_pages = max_pages
         self.pages_scraped = 0
         
         # Load configurations
         self.target_config = self._load_target_config()
-        self.compliance_config = self._load_compliance_config()
+        
+        # Override max_pages with target config if not provided
+        if max_pages is None:
+            self.max_pages = self.target_config.get('crawl_settings', {}).get('max_pages', 10)
+        else:
+            self.max_pages = max_pages
         
         # Set up spider based on target config
         self._setup_spider()
@@ -87,21 +73,6 @@ class EthicalSpider(CrawlSpider):
             self.logger.error(f"Error parsing target file: {e}")
             return {}
     
-    def _load_compliance_config(self) -> Dict:
-        """Load compliance configuration from YAML file."""
-        if not self.compliance_file:
-            return {}
-        
-        try:
-            with open(self.compliance_file, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f)
-        except FileNotFoundError:
-            self.logger.error(f"Compliance file not found: {self.compliance_file}")
-            return {}
-        except yaml.YAMLError as e:
-            self.logger.error(f"Error parsing compliance file: {e}")
-            return {}
-    
     def _setup_spider(self):
         """Configure spider based on target configuration."""
         if not self.target_config:
@@ -111,8 +82,14 @@ class EthicalSpider(CrawlSpider):
         # Set start URLs from target config
         self.start_urls = self.target_config.get('start_urls', [])
         
-        # Configure allowed domains
-        if self.start_urls:
+        # Configure allowed domains from crawl_settings
+        crawl_settings = self.target_config.get('crawl_settings', {})
+        allowed_domains = crawl_settings.get('allowed_domains', [])
+        
+        if allowed_domains:
+            self.allowed_domains = allowed_domains
+        elif self.start_urls:
+            # Auto-detect domains from start URLs
             from urllib.parse import urlparse
             domains = []
             for url in self.start_urls:
@@ -121,35 +98,102 @@ class EthicalSpider(CrawlSpider):
                     domains.append(domain)
             self.allowed_domains = domains
         
-        # Set up rules for crawling if needed
+        # Configure request settings
+        request_settings = self.target_config.get('request_settings', {})
+        
+        # Update custom settings based on target config
+        if request_settings:
+            self.custom_settings = {
+                'ROBOTSTXT_OBEY': True,
+                'DOWNLOAD_DELAY': request_settings.get('delay', 1.0),
+                'RANDOMIZE_DOWNLOAD_DELAY': 0.5 if request_settings.get('randomize_delay', True) else 0,
+                'CONCURRENT_REQUESTS': request_settings.get('concurrent_requests', 1),
+                'CONCURRENT_REQUESTS_PER_DOMAIN': request_settings.get('concurrent_requests', 1),
+                'DOWNLOAD_TIMEOUT': request_settings.get('timeout', 30),
+                'RETRY_TIMES': request_settings.get('retries', 3),
+                'USER_AGENT': request_settings.get('user_agent', 'EthoScraper/1.0 (+https://github.com/maybol283/ethoscraper)'),
+                'AUTOTHROTTLE_ENABLED': True,
+                'AUTOTHROTTLE_START_DELAY': request_settings.get('delay', 1.0),
+                'AUTOTHROTTLE_MAX_DELAY': 10,
+                'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
+                'HTTPCACHE_ENABLED': True,
+                'HTTPCACHE_EXPIRATION_SECS': 3600,
+            }
+        
+        # Set up link extraction rules
+        self._setup_link_extraction_rules()
+        
+        # Get other configurations
+        self.job_name = self.target_config.get('job_name', 'ethoscraper_job')
+        self.extract_fields = self.target_config.get('extract_fields', {})
+        self.output_config = self.target_config.get('output', {})
+        self.filters = self.target_config.get('filters', {})
+        self.max_depth = crawl_settings.get('max_depth', 1)
+        self.follow_links = crawl_settings.get('follow_links', True)
+    
+    def _setup_link_extraction_rules(self):
+        """Configure link extraction rules based on target config."""
+        link_config = self.target_config.get('link_extraction', {})
+        
+        if not self.follow_links:
+            self.rules = ()
+            return
+        
+        # Build allow and deny patterns
+        follow_paths = link_config.get('follow_paths', [])
+        ignore_paths = link_config.get('ignore_paths', [])
+        ignore_extensions = link_config.get('ignore_extensions', [])
+        
+        # Convert paths to regex patterns
+        allow_patterns = []
+        for path in follow_paths:
+            # Convert simple path to regex
+            pattern = f".*{re.escape(path)}.*"
+            allow_patterns.append(pattern)
+        
+        deny_patterns = []
+        for path in ignore_paths:
+            pattern = f".*{re.escape(path)}.*"
+            deny_patterns.append(pattern)
+        
+        # Add extension patterns
+        for ext in ignore_extensions:
+            pattern = f".*\\{ext}$"
+            deny_patterns.append(pattern)
+        
+        # Set up rules
         self.rules = (
             Rule(
                 LinkExtractor(
-                    allow=r'.*',
-                    deny=r'.*\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|tar|gz)$',
+                    allow=allow_patterns if allow_patterns else r'.*',
+                    deny=deny_patterns if deny_patterns else [],
+                    restrict_css=link_config.get('css_selectors', [])
                 ),
                 callback='parse_item',
                 follow=True
             ),
         )
-        
-        # Get job name
-        self.job_name = self.target_config.get('job_name', 'ethoscraper_job')
-        
-        # Get extraction fields
-        self.extract_fields = self.target_config.get('extract_fields', {})
-        
-        # Get output configuration
-        self.output_config = self.target_config.get('output', {})
     
     def setup_logging(self):
         """Set up detailed logging for compliance tracking."""
+        # Get log file path from monitoring config
+        monitoring = self.target_config.get('monitoring', {})
+        log_file = monitoring.get('log_file', f'{self.job_name}.log')
+        
+        # Replace placeholders
+        log_file = log_file.replace('{job_name}', self.job_name)
+        log_file = log_file.replace('{timestamp}', datetime.now().strftime('%Y%m%d_%H%M%S'))
+        
+        # Create log directory if needed
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        
         log_format = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
         logging.basicConfig(
             level=logging.INFO,
             format=log_format,
             handlers=[
-                logging.FileHandler(f'{self.job_name}.log'),
+                logging.FileHandler(log_file),
                 logging.StreamHandler()
             ]
         )
@@ -174,7 +218,8 @@ class EthicalSpider(CrawlSpider):
                 callback=self.parse_item,
                 meta={
                     'compliance_checked': True,
-                    'start_time': time.time()
+                    'start_time': time.time(),
+                    'depth': 0
                 }
             )
     
@@ -206,6 +251,12 @@ class EthicalSpider(CrawlSpider):
             self.logger.info(f"Reached maximum pages limit ({self.max_pages})")
             raise CloseSpider("Maximum pages reached")
         
+        # Check depth limit
+        current_depth = response.meta.get('depth', 0)
+        if current_depth >= self.max_depth:
+            self.logger.info(f"Reached maximum depth limit ({self.max_depth})")
+            return
+        
         self.pages_scraped += 1
         
         # Log the request
@@ -214,38 +265,54 @@ class EthicalSpider(CrawlSpider):
         # Extract data using target configuration
         item = self.extract_configured_data(response)
         
-        # Apply data protection measures
-        item = self.apply_data_protection(item)
-        
-        # Store the data
-        self.scraped_data.append(item)
-        
-        yield item
+        # Apply filters
+        if self._should_include_item(item):
+            # Apply data protection measures
+            item = self.apply_data_protection(item)
+            
+            # Store the data
+            self.scraped_data.append(item)
+            
+            yield item
+        else:
+            self.logger.info(f"Item filtered out: {response.url}")
     
     def extract_configured_data(self, response) -> Dict[str, Any]:
-        """Extract data using the target configuration selectors."""
+        """Extract data using the new target configuration format."""
         item = {}
         
         # Extract each configured field
-        for field_name, selector_config in self.extract_fields.items():
-            if field_name in ['placeholder_value', 'pseudonymise']:
-                continue  # Skip configuration fields
-            
+        for field_name, field_config in self.extract_fields.items():
             try:
-                # Handle different selector formats
-                if isinstance(selector_config, str):
-                    value = self._extract_with_selector(response, selector_config)
-                elif isinstance(selector_config, dict):
-                    # Handle complex selector configurations
-                    value = self._extract_complex_field(response, selector_config)
+                # Handle new nested configuration format
+                if isinstance(field_config, dict):
+                    value = self._extract_nested_field(response, field_config)
                 else:
-                    value = None
+                    # Fallback for old string format
+                    value = self._extract_with_selector(response, field_config)
+                
+                # Apply default value if needed
+                if value is None:
+                    value = field_config.get('default_value') if isinstance(field_config, dict) else None
+                
+                # Validate if required
+                if isinstance(field_config, dict) and field_config.get('required', False) and not value:
+                    self.logger.warning(f"Required field '{field_name}' is missing")
+                
+                # Field-level validation
+                if value and isinstance(field_config, dict) and 'validation' in field_config:
+                    if not self._validate_field_value(value, field_config['validation']):
+                        self.logger.warning(f"Field '{field_name}' failed validation")
+                        continue
                 
                 item[field_name] = value
                 
             except Exception as e:
                 self.logger.warning(f"Error extracting field '{field_name}': {e}")
-                item[field_name] = self.extract_fields.get('placeholder_value', '[ERROR]')
+                error_value = '[ERROR]'
+                if isinstance(field_config, dict):
+                    error_value = field_config.get('default_value', '[ERROR]')
+                item[field_name] = error_value
         
         # Add metadata
         item['scraped_at'] = datetime.now().isoformat()
@@ -254,105 +321,169 @@ class EthicalSpider(CrawlSpider):
         
         return item
     
-    def _extract_with_selector(self, response, selector_config: str) -> Any:
-        """Extract data using a selector string with optional transformations."""
+    def _extract_nested_field(self, response, field_config: Dict) -> Any:
+        """Extract data using nested field configuration."""
+        selector = field_config.get('selector', '')
         
-        # Check for special case: response.url
-        if selector_config == "response.url":
-            return response.url
-        
-        # Parse selector with transformations
-        parts = selector_config.split(' | ')
-        selector = parts[0]
-        transformations = parts[1:] if len(parts) > 1 else []
-        
-        # Extract data using CSS selector
-        if '::text' in selector:
-            values = response.css(selector).getall()
-        elif '::attr(' in selector:
-            values = response.css(selector).getall()
+        # Handle special cases
+        if selector == "response.url":
+            value = response.url
         else:
-            # Default to text extraction
-            values = response.css(f"{selector}::text").getall()
+            # Extract using CSS selector
+            if '::text' in selector:
+                values = response.css(selector).getall()
+            elif '::attr(' in selector:
+                values = response.css(selector).getall()
+            else:
+                # Default to text extraction
+                values = response.css(f"{selector}::text").getall()
+            
+            # Apply transformations
+            transformations = field_config.get('transformations', [])
+            values = self._apply_nested_transformations(values, transformations)
+            
+            # Return appropriate format
+            if len(values) == 1:
+                value = values[0]
+            elif len(values) == 0:
+                value = None
+            else:
+                value = values
         
-        # Apply transformations
-        for transform in transformations:
-            values = self._apply_transformation(values, transform.strip())
-        
-        # Return single value or list
-        if len(values) == 1:
-            return values[0]
-        elif len(values) == 0:
-            return None
-        else:
-            return values
+        return value
     
-    def _apply_transformation(self, values: List[str], transformation: str) -> List[str]:
-        """Apply a transformation to extracted values."""
-        if transformation == 'strip':
-            return [v.strip() for v in values if v]
-        elif transformation.startswith('replace:'):
-            # Parse replace: 'old', 'new'
-            parts = transformation.split(':', 1)[1].split(',')
-            if len(parts) == 2:
-                old = parts[0].strip().strip('"\'')
-                new = parts[1].strip().strip('"\'')
-                return [v.replace(old, new) for v in values]
-        elif transformation == 'join':
-            return [' '.join(values)]
-        elif transformation.startswith('regex:'):
-            # Apply regex transformation
-            pattern = transformation.split(':', 1)[1]
-            return [re.sub(pattern, '', v) for v in values]
+    def _apply_nested_transformations(self, values: List[str], transformations: List[Dict]) -> List[str]:
+        """Apply transformations using new nested format."""
+        if not values:
+            return values
+        
+        for transform in transformations:
+            for transform_type, transform_config in transform.items():
+                if transform_type == 'strip' and transform_config:
+                    values = [v.strip() for v in values if v]
+                
+                elif transform_type == 'lowercase' and transform_config:
+                    values = [v.lower() for v in values]
+                
+                elif transform_type == 'uppercase' and transform_config:
+                    values = [v.upper() for v in values]
+                
+                elif transform_type == 'title_case' and transform_config:
+                    values = [v.title() for v in values]
+                
+                elif transform_type == 'limit':
+                    values = values[:transform_config]
+                
+                elif transform_type == 'join':
+                    values = [transform_config.join(values)]
+                
+                elif transform_type == 'split':
+                    new_values = []
+                    for v in values:
+                        new_values.extend(v.split(transform_config))
+                    values = new_values
+                
+                elif transform_type == 'replace':
+                    from_val = transform_config.get('from', '')
+                    to_val = transform_config.get('to', '')
+                    values = [v.replace(from_val, to_val) for v in values]
+                
+                elif transform_type == 'truncate':
+                    values = [v[:transform_config] for v in values]
+                
+                elif transform_type == 'remove_html' and transform_config:
+                    values = [re.sub(r'<[^>]+>', '', v) for v in values]
+                
+                elif transform_type == 'remove_prefix':
+                    values = [v[len(transform_config):] if v.startswith(transform_config) else v for v in values]
+                
+                elif transform_type == 'remove_suffix':
+                    values = [v[:-len(transform_config)] if v.endswith(transform_config) else v for v in values]
+                
+                elif transform_type == 'normalize_phone' and transform_config:
+                    values = [self._normalize_phone(v) for v in values]
         
         return values
     
-    def _extract_complex_field(self, response, field_config: Dict) -> Any:
-        """Handle complex field configurations."""
-        # This can be extended for more complex extraction logic
-        return None
+    def _normalize_phone(self, phone: str) -> str:
+        """Normalize phone number format."""
+        # Remove all non-digit characters except +
+        cleaned = re.sub(r'[^\d+]', '', phone)
+        
+        # Basic normalization - you can extend this
+        if cleaned.startswith('+'):
+            return cleaned
+        elif len(cleaned) == 10:
+            return f"+1{cleaned}"
+        elif len(cleaned) == 11 and cleaned.startswith('1'):
+            return f"+{cleaned}"
+        else:
+            return phone
+    
+    def _validate_field_value(self, value: Any, validation: Dict) -> bool:
+        """Validate field value against validation rules."""
+        if not value:
+            return True
+        
+        value_str = str(value)
+        
+        # Pattern validation
+        if 'pattern' in validation:
+            if not re.match(validation['pattern'], value_str):
+                return False
+        
+        # Length validation
+        if 'min_length' in validation:
+            if len(value_str) < validation['min_length']:
+                return False
+        
+        if 'max_length' in validation:
+            if len(value_str) > validation['max_length']:
+                return False
+        
+        return True
+    
+    def _should_include_item(self, item: Dict[str, Any]) -> bool:
+        """Check if item should be included based on filters."""
+        exclude_rules = self.filters.get('exclude_if', [])
+        
+        for rule in exclude_rules:
+            field = rule.get('field')
+            contains = rule.get('contains')
+            
+            if field in item and item[field] and contains:
+                if contains.lower() in str(item[field]).lower():
+                    return False
+        
+        return True
     
     def apply_data_protection(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        """Apply data protection measures based on target and compliance config."""
+        """Apply data protection measures based on field-level privacy settings."""
         
-        # Apply pseudonymization from target config
-        pseudonymise_config = self.extract_fields.get('pseudonymise', {})
-        
-        for field, method in pseudonymise_config.items():
-            if field in item and item[field]:
-                if method.startswith('SHA256'):
-                    # Handle SHA256:8 format (truncate to 8 characters)
-                    hash_full = hashlib.sha256(str(item[field]).encode()).hexdigest()
-                    if ':' in method:
-                        length = int(method.split(':')[1])
-                        item[field] = hash_full[:length]
-                    else:
-                        item[field] = hash_full
-                elif method == 'Stub':
-                    item[field] = '[REDACTED]'
-        
-        # Apply compliance-based data protection if available
-        if self.compliance_config:
-            protection_settings = self.compliance_config.get('data_protection', {})
-            
-            # Drop fields if configured in compliance
-            dropped_columns = protection_settings.get('columns_dropped', [])
-            for column in dropped_columns:
-                item.pop(column, None)
+        # Apply field-level privacy settings
+        for field_name, field_config in self.extract_fields.items():
+            if isinstance(field_config, dict) and 'privacy' in field_config:
+                privacy_config = field_config['privacy']
+                
+                if field_name in item and item[field_name]:
+                    # Apply pseudonymization
+                    if 'pseudonymise' in privacy_config:
+                        method = privacy_config['pseudonymise']
+                        if method.startswith('SHA256'):
+                            hash_full = hashlib.sha256(str(item[field_name]).encode()).hexdigest()
+                            if ':' in method:
+                                length = int(method.split(':')[1])
+                                item[field_name] = hash_full[:length]
+                            else:
+                                item[field_name] = hash_full
+                        elif method == 'Stub':
+                            item[field_name] = '[REDACTED]'
+                    
+                    # Apply anonymization (remove field completely)
+                    if privacy_config.get('anonymize', False):
+                        item.pop(field_name, None)
         
         return item
-    
-    def closed(self, reason):
-        """Called when spider is closed."""
-        end_time = datetime.now()
-        duration = end_time - self.start_time
-        
-        self.logger.info(f"Spider closed: {reason}")
-        self.logger.info(f"Pages scraped: {self.pages_scraped}")
-        self.logger.info(f"Duration: {duration}")
-        
-        # Save final results
-        self.save_results()
     
     def save_results(self):
         """Save scraped data to file based on output configuration."""
@@ -362,6 +493,11 @@ class EthicalSpider(CrawlSpider):
         
         # Get output configuration
         output_file = self.output_config.get('file', f'output/scraped_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json')
+        
+        # Replace placeholders
+        output_file = output_file.replace('{timestamp}', datetime.now().strftime('%Y%m%d_%H%M%S'))
+        output_file = output_file.replace('{job_name}', self.job_name)
+        
         output_path = Path(output_file)
         
         # Create output directory
@@ -407,17 +543,72 @@ class EthicalSpider(CrawlSpider):
         """Save data as JSON file."""
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(self.scraped_data, f, indent=2, ensure_ascii=False)
+    
+    def closed(self, reason):
+        """Called when spider is closed."""
+        end_time = datetime.now()
+        duration = end_time - self.start_time
+        
+        self.logger.info(f"Spider closed: {reason}")
+        self.logger.info(f"Pages scraped: {self.pages_scraped}")
+        self.logger.info(f"Duration: {duration}")
+        
+        # Save final results
+        self.save_results()
+    
+    # Legacy method for backward compatibility
+    def _extract_with_selector(self, response, selector_config: str) -> Any:
+        """Extract data using old selector string format."""
+        if selector_config == "response.url":
+            return response.url
+        
+        parts = selector_config.split(' | ')
+        selector = parts[0]
+        transformations = parts[1:] if len(parts) > 1 else []
+        
+        if '::text' in selector:
+            values = response.css(selector).getall()
+        elif '::attr(' in selector:
+            values = response.css(selector).getall()
+        else:
+            values = response.css(f"{selector}::text").getall()
+        
+        for transform in transformations:
+            values = self._apply_transformation(values, transform.strip())
+        
+        if len(values) == 1:
+            return values[0]
+        elif len(values) == 0:
+            return None
+        else:
+            return values
+    
+    def _apply_transformation(self, values: List[str], transformation: str) -> List[str]:
+        """Apply old-style transformations for backward compatibility."""
+        if transformation == 'strip':
+            return [v.strip() for v in values if v]
+        elif transformation.startswith('replace:'):
+            parts = transformation.split(':', 1)[1].split(',')
+            if len(parts) == 2:
+                old = parts[0].strip().strip('"\'')
+                new = parts[1].strip().strip('"\'')
+                return [v.replace(old, new) for v in values]
+        elif transformation == 'join':
+            return [' '.join(values)]
+        elif transformation.startswith('regex:'):
+            pattern = transformation.split(':', 1)[1]
+            return [re.sub(pattern, '', v) for v in values]
+        
+        return values
 
 
-def run_ethical_scraper(target_file: str, compliance_file: str = None, 
-                       max_pages: int = 10, **kwargs):
+def run_ethical_scraper(target_file: str, max_pages: int = None, **kwargs):
     """
     Run the ethical scraper with target configuration.
     
     Args:
         target_file: Path to target.yaml configuration file
-        compliance_file: Path to compliance YAML file (optional)
-        max_pages: Maximum number of pages to scrape
+        max_pages: Maximum number of pages to scrape (overrides config)
         **kwargs: Additional spider arguments
     """
     
@@ -436,7 +627,6 @@ def run_ethical_scraper(target_file: str, compliance_file: str = None,
     process.crawl(
         EthicalSpider,
         target_file=target_file,
-        compliance_file=compliance_file,
         max_pages=max_pages,
         **kwargs
     )
@@ -448,16 +638,14 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python scraper.py <target.yaml> [compliance.yaml] [max_pages]")
+        print("Usage: python scraper.py <target.yaml> [max_pages]")
         sys.exit(1)
     
     target_file = sys.argv[1]
-    compliance_file = sys.argv[2] if len(sys.argv) > 2 else None
-    max_pages = int(sys.argv[3]) if len(sys.argv) > 3 else 10
+    max_pages = int(sys.argv[2]) if len(sys.argv) > 2 else None
     
     print(f"🎯 Starting targeted scraping with: {target_file}")
-    print(f"📋 Compliance file: {compliance_file or 'None'}")
-    print(f"📄 Max pages: {max_pages}")
+    print(f"📄 Max pages: {max_pages or 'From config'}")
     print("-" * 50)
     
-    run_ethical_scraper(target_file, compliance_file, max_pages)
+    run_ethical_scraper(target_file, max_pages)
