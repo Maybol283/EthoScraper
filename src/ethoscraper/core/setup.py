@@ -112,7 +112,7 @@ def create_project_structure(project_name: str) -> tuple[Path, Path]:
 def copy_and_customize_templates(target_dir: Path, output_dir: Path, project_name: str, target_url: str) -> None:
     """Copy template files and customize them with project-specific values."""
     for name in ("compliance-template.yaml", "target-template.yaml"):
-        src = Path(__file__).parent / "templates" / name
+        src = Path(__file__).parent.parent / "templates" / name
         
         # compliance.yaml goes to output/, target.yaml stays in project root
         if name == "compliance-template.yaml":
