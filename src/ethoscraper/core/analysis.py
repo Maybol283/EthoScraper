@@ -11,8 +11,12 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-# Load from your custom secrets file
-load_dotenv("secrets.env")
+# Load from your custom secrets file (relative to project root)
+# Get the path relative to this script's location
+script_dir = Path(__file__).parent
+project_root = script_dir.parent.parent.parent  # Go up from core/ to ethoscraper/ to src/ to project root
+secrets_path = project_root / "secrets.env"
+load_dotenv(secrets_path)
 
 
 def load_compliance_data(compliance_path: Path) -> Dict:
@@ -40,13 +44,12 @@ def create_analysis_prompt(lia_data: Dict) -> str:
     """Create the prompt for LLM analysis."""
     return f"""
 You are an expert data protection analyst evaluating a Legitimate Interest Assessment (LIA) under GDPR Article 6(1)(f).
+Remember that this LIA will be used to justify web scraping activities. All users will have no relationship with the data subjects, keep this in mind when evaluating the LIA.
+If informing data subjects is a concern inform users that data controllers have 1 month from data collection to contact the data subject under GDPR Article 14 (3)(a)
+It is okay to give a low confidence rating as accuracy is important, so err on the side of caution.
 
 PROJECT: {lia_data['project_name']} | URL: {lia_data['target_url']}
 DPIA Required: {lia_data['dpia_required']}
-
-═══════════════════════════════════════════════════════════════════════════════════
-ASSESSMENT DATA TO ANALYZE:
-═══════════════════════════════════════════════════════════════════════════════════
 
 Purpose Test:
 {yaml.dump(lia_data['purpose_test'], indent=2, default_flow_style=False)}
@@ -57,30 +60,19 @@ Necessity Test:
 Balancing Test:
 {yaml.dump(lia_data['balancing_test'], indent=2, default_flow_style=False)}
 
-═══════════════════════════════════════════════════════════════════════════════════
-ANALYSIS INSTRUCTIONS:
-═══════════════════════════════════════════════════════════════════════════════════
-
 Please evaluate each component of the LIA according to GDPR standards:
-
 1. PURPOSE TEST EVALUATION:
    - Is the legitimate interest clearly defined and specific?
    - Is the purpose lawful under applicable regulations?
    - Are there any competing legal bases that might be more appropriate?
-
 2. NECESSITY TEST EVALUATION:
    - Is the data processing genuinely necessary for the stated purpose?
    - Are there less intrusive alternatives available?
    - Is the data collection proportionate to the intended outcome?
-
 3. BALANCING TEST EVALUATION:
    - Are the data subject's rights and freedoms adequately considered?
    - Are there appropriate safeguards and protections in place?
    - Does the legitimate interest override the fundamental rights?
-
-═══════════════════════════════════════════════════════════════════════════════════
-CONFIDENCE RATING DEFINITIONS:
-═══════════════════════════════════════════════════════════════════════════════════
 
 Your confidence_rating (0-100) should reflect the overall robustness of the LIA:
 
@@ -97,14 +89,12 @@ Your confidence_rating (0-100) should reflect the overall robustness of the LIA:
           inadequate safeguards. Substantial legal risk.
 
 • 50-59:  POOR - Major deficiencies across multiple areas. High legal risk, 
-          requires immediate attention.
+          requires immediate attention. Lack of justifications in general.
 
 • 0-49:   INADEQUATE - Fundamental flaws in the assessment. Unacceptable legal 
-          risk, likely non-compliant with GDPR.
+          risk, likely non-compliant with GDPR. No justifications in general.
 
-═══════════════════════════════════════════════════════════════════════════════════
 REQUIRED OUTPUT FORMAT:
-═══════════════════════════════════════════════════════════════════════════════════
 
 Return your analysis as a YAML document with the following structure:
 
@@ -155,28 +145,97 @@ Focus on providing specific, actionable insights based on GDPR requirements and 
 """
 
 
-def analyze_with_llm(lia_data: Dict, api_key: str, model: str = "gpt-4") -> Dict:
-    """Analyze LIA data using OpenAI API."""
+def analyze_with_llm(lia_data: Dict, api_key: str, model: str = "o3") -> Dict:
+    """Analyze LIA data using OpenAI API with robust error handling."""
     client = OpenAI(api_key=api_key)
     prompt = create_analysis_prompt(lia_data)
     
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": "You are a data protection expert."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.3,
-        max_tokens=2000
-    )
-    
-    # Extract and parse YAML response
-    content = response.choices[0].message.content
-    yaml_start = content.find('```yaml\n') + 8
-    yaml_end = content.rfind('```')
-    yaml_content = content[yaml_start:yaml_end]
-    
-    return yaml.safe_load(yaml_content)
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a data protection expert. Always return properly formatted YAML with all required fields."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_completion_tokens=5000
+            )
+            
+            # Extract and parse YAML response with better error handling
+            content = response.choices[0].message.content
+            print(f"Debug - Raw LLM response length: {len(content)}")
+            
+            # Try multiple YAML extraction patterns
+            yaml_content = None
+            for pattern in ['```yaml\n', '```yaml', '```\n']:
+                if pattern in content:
+                    yaml_start = content.find(pattern) + len(pattern)
+                    yaml_end = content.rfind('```')
+                    if yaml_end > yaml_start:
+                        yaml_content = content[yaml_start:yaml_end].strip()
+                        break
+            
+            if not yaml_content:
+                raise ValueError("Could not find YAML content in LLM response")
+            
+            print(f"Debug - Extracted YAML length: {len(yaml_content)}")
+            
+            # Parse YAML with error handling
+            try:
+                analysis = yaml.safe_load(yaml_content)
+            except yaml.YAMLError as e:
+                print(f"YAML parsing error: {e}")
+                print(f"Problematic YAML content:\n{yaml_content}")
+                raise ValueError(f"Invalid YAML format: {e}")
+            
+            # Validate required fields
+            required_fields = ['confidence_rating', 'overall_assessment', 'legal_risk_level', 'compliance_status']
+            missing_fields = [field for field in required_fields if field not in analysis]
+            
+            if missing_fields:
+                print(f"Missing required fields: {missing_fields}")
+                if attempt < max_retries - 1:
+                    print(f"Retrying... (attempt {attempt + 1}/{max_retries})")
+                    continue
+                else:
+                    # Provide default values for missing fields
+                    defaults = {
+                        'confidence_rating': 50,
+                        'overall_assessment': 'Analysis incomplete due to parsing issues',
+                        'legal_risk_level': 'MEDIUM',
+                        'compliance_status': 'PARTIALLY_COMPLIANT',
+                        'key_concerns': ['LLM response parsing issues'],
+                        'recommendations': ['Review and complete assessment manually'],
+                        'section_analysis': {
+                            'purpose_test': {'score': 50, 'comments': 'Incomplete analysis'},
+                            'necessity_test': {'score': 50, 'comments': 'Incomplete analysis'},
+                            'balancing_test': {'score': 50, 'comments': 'Incomplete analysis'}
+                        }
+                    }
+                    for field, default_value in defaults.items():
+                        if field not in analysis:
+                            analysis[field] = default_value
+            
+            return analysis
+            
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            if attempt == max_retries - 1:
+                # Return a basic fallback analysis
+                return {
+                    'confidence_rating': 40,
+                    'overall_assessment': f'Analysis failed due to technical issues: {e}',
+                    'legal_risk_level': 'HIGH',
+                    'compliance_status': 'NON_COMPLIANT',
+                    'key_concerns': [f'Technical analysis failure: {e}'],
+                    'recommendations': ['Manual review required due to technical issues'],
+                    'section_analysis': {
+                        'purpose_test': {'score': 40, 'comments': 'Technical analysis failure'},
+                        'necessity_test': {'score': 40, 'comments': 'Technical analysis failure'},
+                        'balancing_test': {'score': 40, 'comments': 'Technical analysis failure'}
+                    }
+                }
 
 
 def generate_markdown_report(analysis: Dict, lia_data: Dict) -> str:
@@ -240,8 +299,6 @@ def generate_markdown_report(analysis: Dict, lia_data: Dict) -> str:
 
 ## Executive Summary
 
-| Metric | Value |
-|--------|-------|
 | **Overall Confidence Rating** | **{analysis['confidence_rating']}/100** |
 | **Legal Risk Level** | {risk_badge} |
 | **Compliance Status** | {compliance_badge} |
@@ -281,8 +338,8 @@ def generate_markdown_report(analysis: Dict, lia_data: Dict) -> str:
 | 80-89  | **GOOD** - Most aspects well-covered, minor gaps, generally compliant |
 | 70-79  | **ACCEPTABLE** - Basic requirements met, some deficiencies, some legal risk |
 | 60-69  | **CONCERNING** - Significant gaps, weak justifications, substantial legal risk |
-| 50-59  | **POOR** - Major deficiencies, high legal risk, requires immediate attention |
-| 0-49   | **INADEQUATE** - Fundamental flaws, unacceptable legal risk, likely non-compliant |
+| 50-59  | **POOR** - Major deficiencies, high legal risk, requires immediate attention, lack of justifications in general |
+| 0-49   | **INADEQUATE** - Fundamental flaws, unacceptable legal risk, likely non-compliant, no justifications in general |
 
 ---
 
@@ -317,7 +374,7 @@ def save_markdown_report(report: str, output_path: Path) -> None:
     print(f"✅ Analysis report saved to: {output_path}")
 
 
-def analyze_compliance_file(compliance_path: Path, api_key: str, model: str = "gpt-4", output_path: Path = None) -> Tuple[Dict, str]:
+def analyze_compliance_file(compliance_path: Path, api_key: str, model: str = "gpt-4.1", output_path: Path = None) -> Tuple[Dict, str]:
     """Main analysis function - enhanced with markdown output."""
     compliance_data = load_compliance_data(compliance_path)
     lia_data = extract_lia_data(compliance_data)
@@ -334,17 +391,18 @@ def analyze_compliance_file(compliance_path: Path, api_key: str, model: str = "g
 # Simple usage
 if __name__ == "__main__":
     api_key = os.getenv('OPENAI_API_KEY')
-    model = os.getenv('MODEL_NAME', 'gpt-4')  # Default fallback
+    model = os.getenv('MODEL_NAME', 'o3-mini')  # Default fallback
     
     if not api_key:
         print("Error: OPENAI_API_KEY not found in environment")
         exit(1)
     
-    compliance_path = Path("Test/output/compliance.yaml")
+    # Use relative path from current working directory (assumes user starts from project folder)
+    compliance_path = Path("output/compliance.yaml")
     
     # Generate timestamp for unique filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = Path(f"Test/output/lia_analysis_report_{timestamp}.md")
+    output_path = Path(f"output/lia_analysis_report_{timestamp}.md")
     
     print("🔍 Starting LIA Analysis...")
     print(f"📁 Input file: {compliance_path}")

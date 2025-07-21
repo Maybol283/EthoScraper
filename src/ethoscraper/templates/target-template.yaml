@@ -5,129 +5,76 @@ version: "1.0"
 
 # URL Configuration
 start_urls:
-  - "https://university.edu/"
+  - "https://books.toscrape.com/"
 
 # Crawling Behavior
 crawl_settings:
   max_depth: 2
-  max_pages: 20
+  max_pages: 10 # Good for testing
   follow_links: true
   allowed_domains:
-    - "university.edu"
-    - "staff.university.edu"
+    - "books.toscrape.com"
 
 # Link Following Rules
 link_extraction:
   follow_paths:
-    - "/staff/"
-    - "/faculty/"
-    - "/profile/"
+    - "/catalogue/"
+    - "?page="
+    - "&page="
 
   ignore_paths:
-    - "/admin/"
-    - "/login/"
+    - "/similar/"
 
-  ignore_extensions:
-    - ".pdf"
-    - ".doc"
-    - ".zip"
+  ignore_extensions: []
 
   css_selectors:
-    - "a.staff-link"
-    - ".pagination a"
-    - "a[href*='profile']"
+    - "article.product_pod h3 a" # Individual book links
+    - ".pagination a" # Pagination links
+    - "a[href*='page']" # Page links
 
 # Request Settings
 request_settings:
-  delay: 1.0
+  delay: 1.0 # Faster for testing
   randomize_delay: true
   concurrent_requests: 1
   timeout: 30
   retries: 3
-  user_agent: "EthoScraper/1.0 (+https://github.com/maybol283/ethoscraper)"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
 # Data Extraction
 extract_fields:
-  name:
-    selector: "h2::text"
-    transformations:
-      - strip: true
-      - title_case: true
-      - remove_prefix: "Dr. "
-    required: true
-    privacy:
-      pseudonymise: "SHA256:8"
-
   title:
-    selector: ".profile-role::text"
+    selector: "h1::text"
     transformations:
       - strip: true
-    required: false
-
-  email:
-    selector: "a[href^='mailto:']::attr(href)"
-    transformations:
-      - replace:
-          from: "mailto:"
-          to: ""
-      - lowercase: true
     required: true
-    validation:
-      pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
 
-  phone:
-    selector: ".contact-phone::text"
-    transformations:
-      - strip: true
-      - normalize_phone: true
-    required: false
-    default_value: "[Not Available]"
-
-  research_area:
-    selector: ".research-tags li::text"
-    transformations:
-      - strip: true
-      - split: ","
-      - limit: 5
-      - join: "; "
-    required: false
-
-  department:
-    selector: ".department::text"
+  price:
+    selector: ".product_main .price_color::text"
     transformations:
       - strip: true
     required: false
 
-  bio:
-    selector: ".bio::text"
+  rating:
+    selector: ".product_main .star-rating::attr(class)"
     transformations:
       - strip: true
-      - truncate: 200
-      - remove_html: true
-    required: false
-    validation:
-      min_length: 10
-      max_length: 1000
-
-  publications:
-    selector: ".publication-list li::text"
-    transformations:
-      - limit: 10
+      - replace:
+          from: "star-rating "
+          to: ""
     required: false
 
-  image_url:
-    selector: "img.profile-photo::attr(src)"
-    required: false
-    privacy:
-      pseudonymise: "Stub"
-
-  office_location:
-    selector: ".office::text"
+  availability:
+    selector: ".product_main .availability::text"
     transformations:
       - strip: true
     required: false
-    privacy:
-      anonymize: true
+
+  description:
+    selector: "#product_description + p::text"
+    transformations:
+      - strip: true
+    required: false
 
   url:
     selector: "response.url"

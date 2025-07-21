@@ -378,7 +378,7 @@ def purpose_test(target_url: str, compliance_path: Path) -> list[str]:
             ]
         },
         "no_process": {
-            "question": "5. What if we couldn't process?",
+            "question": "5. What would happen if we couldn't process this data?",
             "yaml_key": "if_couldnt_process",
             "examples": [
                 " We would rely on expensive, limited survey panels,",
@@ -386,7 +386,7 @@ def purpose_test(target_url: str, compliance_path: Path) -> list[str]:
             ]
         },
         "positive_outcome": {
-            "question": "6. Positive outcome for individuals?",
+            "question": "6. Are there any positive outcomes for individuals involved in the processing?",
             "yaml_key": "positive_outcome_individuals",
             "examples": [
                 " Voices expressed in small regional outlets are surfaced",
@@ -413,7 +413,10 @@ def purpose_test(target_url: str, compliance_path: Path) -> list[str]:
         for line in data["examples"]:
             print(line)
         print()
-        answer = input(f"{data['question']} ")
+        answer = input(f"{data['question']} ").strip()
+        while len(answer) < 10:
+            print("Answer must be at least 10 characters long. Please provide a more detailed response.")
+            answer = input(f"{data['question']} ").strip()
         answers.append(answer)
         collected_answers[data["yaml_key"]] = answer
     
@@ -592,7 +595,10 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             for line in data["followup_examples"]:
                 print(line)
             print()
-            detailed_answer = input(f"Please describe the affected group and specify what type of {key.replace('_', ' ')} you are processing: ")
+            detailed_answer = input(f"Please describe the affected group and specify what type of {key.replace('_', ' ')} you are processing: ").strip()
+            while len(detailed_answer) < 10:
+                print("Answer must be at least 10 characters long. Please provide a more detailed response.")
+                detailed_answer = input(f"Please describe the affected group and specify what type of {key.replace('_', ' ')} you are processing: ").strip()
             final_answer = detailed_answer
         else:
             final_answer = "No" if initial_answer in ["N", "No", "n", "no"] else initial_answer
@@ -612,34 +618,8 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
     
     # Reasonable Expectations questions - unified structure
     expectations_data = {
-        "existing_relationship": {
-            "question": "1. Do you have an existing relationship with the individuals whose data you're processing? If so, what is the nature of that relationship?",
-            "yaml_key": "existing_relationship_with_individuals",
-            "examples": [
-                " No existing relationship - we are processing publicly",
-                " available comments from newspaper websites and forums",
-                " where individuals have no direct relationship with us."
-            ]
-        },
-        "past_usage": {
-            "question": "2. How have you used their data in the past?",
-            "yaml_key": "past_data_usage",
-            "examples": [
-                " This is the first time we are processing data from these",
-                " sources. We have not used their data previously."
-            ]
-        },
-        "collected_directly": {
-            "question": "3. Did you collect the data directly from the individuals?",
-            "yaml_key": "data_collected_directly_from_individuals",
-            "examples": [
-                " No, the data is collected from third-party websites",
-                " (newspaper comment sections and public forums) rather",
-                " than directly from individuals."
-            ]
-        },
         "told_individuals": {
-            "question": "4. What did you tell individuals at the time of collection?",
+            "question": "1. What did you tell individuals at the time of collection or when will they be informed and what will you tell them?",
             "yaml_key": "what_told_individuals_at_collection",
             "examples": [
                 " Not applicable - we did not collect data directly from",
@@ -648,7 +628,7 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             ]
         },
         "third_party_told": {
-            "question": "5. If obtained from third party, what did they tell individuals about reuse by third parties?",
+            "question": "2. If obtained from third party, what did they tell individuals about reuse by third parties?",
             "yaml_key": "third_party_disclosure_about_reuse",
             "examples": [
                 " The website terms of service typically state that comments",
@@ -656,17 +636,8 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
                 " Forum policies generally allow academic research use."
             ]
         },
-        "data_age_context": {
-            "question": "6. How long ago was the data collected and are there any relevant changes since then?",
-            "yaml_key": "data_collection_age_and_context_changes",
-            "examples": [
-                " Data collection is current (within last 6 months).",
-                " No significant technological or contextual changes",
-                " since collection that would affect expectations."
-            ]
-        },
         "obvious_purpose": {
-            "question": "7. Is your intended purpose and method obvious or widely understood?",
+            "question": "3. Is your intended purpose and method obvious or widely understood by your data subjects?",
             "yaml_key": "purpose_and_method_obvious_or_understood",
             "examples": [
                 " Academic research on public environmental discourse is",
@@ -675,7 +646,7 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             ]
         },
         "innovative_processing": {
-            "question": "8. Are you doing anything new or innovative with the data?",
+            "question": "4. Are you doing anything new or innovative with the data?",
             "yaml_key": "using_innovative_processing_methods",
             "examples": [
                 " The research methods are standard (thematic analysis",
@@ -684,7 +655,7 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             ]
         },
         "evidence_expectations": {
-            "question": "9. Do you have evidence about expectations (market research, focus groups, consultation)?",
+            "question": "5. Do you have evidence about expectations (market research, focus groups, consultation)?",
             "yaml_key": "evidence_about_individual_expectations",
             "examples": [
                 " We conducted focus groups with 20 local residents who",
@@ -693,7 +664,7 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             ]
         },
         "other_factors": {
-            "question": "10. Are there other factors that would affect whether individuals expect this processing?",
+            "question": "6. Are there other factors that would affect whether individuals expect this processing?",
             "yaml_key": "other_factors_affecting_expectations",
             "examples": [
                 " The data subjects have chosen to post in public forums",
@@ -709,7 +680,10 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
         for line in data["examples"]:
             print(line)
         print()
-        answer = input(f"{data['question']} ")
+        answer = input(f"{data['question']} ").strip()
+        while len(answer) < 10:
+            print("Answer must be at least 10 characters long. Please provide a more detailed response.")
+            answer = input(f"{data['question']} ").strip()
         expectations_answers.append(answer)
         collected_answers[data["yaml_key"]] = answer
     
