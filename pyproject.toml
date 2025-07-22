@@ -1,7 +1,7 @@
 [project]
 name = "ethoscraper"
 version = "0.1.0"
-description = ""
+description = "Ethical web scraper with GDPR compliance tools"
 authors = [
     {name = "Maybol283",email = "126118241+Maybol283@users.noreply.github.com"}
 ]
@@ -18,9 +18,14 @@ dependencies = [
     "python-dotenv (>=1.1.1,<2.0.0)"
 ]
 
+[project.scripts]
+ethoscraper = "ethoscraper.cli:main"
+ethoscraper-setup = "ethoscraper.core.setup:main"
+ethoscraper-analyze = "ethoscraper.core.analysis:main"
+ethoscraper-scrape = "ethoscraper.core.scraper:main"
+
 [tool.poetry]
 packages = [{include = "ethoscraper", from = "src"}]
-
 
 [tool.poetry.group.dev.dependencies]
 rich = "^14.0.0"

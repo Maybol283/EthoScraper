@@ -60,39 +60,61 @@ Necessity Test:
 Balancing Test:
 {yaml.dump(lia_data['balancing_test'], indent=2, default_flow_style=False)}
 
-Please evaluate each component of the LIA according to GDPR standards:
-1. PURPOSE TEST EVALUATION:
-   - Is the legitimate interest clearly defined and specific?
-   - Is the purpose lawful under applicable regulations?
-   - Are there any competing legal bases that might be more appropriate?
-2. NECESSITY TEST EVALUATION:
-   - Is the data processing genuinely necessary for the stated purpose?
-   - Are there less intrusive alternatives available?
-   - Is the data collection proportionate to the intended outcome?
-3. BALANCING TEST EVALUATION:
-   - Are the data subject's rights and freedoms adequately considered?
-   - Are there appropriate safeguards and protections in place?
-   - Does the legitimate interest override the fundamental rights?
+SCORING CRITERIA FOR CONSISTENCY:
+
+Each test should be scored based on these specific factors:
+
+PURPOSE TEST SCORING (0-100):
+• 90-100: Purpose is specific, clearly articulated, legally sound with detailed justifications. Strong business/research rationale. Clear societal benefits identified.
+• 70-89: Purpose is adequately defined with some legal justification. Business case present but may lack depth or specificity.
+• 50-69: Purpose is vague or generic. Weak justification. Limited consideration of alternatives or benefits.
+• 30-49: Purpose is unclear or potentially unlawful. Poor justification. Lacks business rationale.
+• 0-29: Purpose is absent, incoherent, or clearly unlawful.
+
+NECESSITY TEST SCORING (0-100):
+• 90-100: Clear demonstration that processing is essential. Thorough analysis of alternatives. Proportionality well-established. Data minimization evident.
+• 70-89: Processing necessity adequately justified. Some analysis of alternatives. Generally proportionate approach.
+• 50-69: Necessity poorly justified. Limited consideration of alternatives. May be disproportionate to stated purpose.
+• 30-49: Weak necessity argument. No real analysis of alternatives. Clearly disproportionate or excessive.
+• 0-29: Processing is clearly unnecessary or alternatives not considered at all.
+
+BALANCING TEST SCORING (0-100):
+• 90-100: Comprehensive consideration of data subject rights. Strong safeguards in place. Clear understanding of expectations. Robust privacy measures.
+• 70-89: Adequate consideration of rights. Some safeguards present. Generally understands expectations but may have gaps.
+• 50-69: Limited consideration of rights. Weak safeguards. Poor understanding of individual expectations.
+• 30-49: Minimal consideration of rights. No meaningful safeguards. Ignores individual expectations.
+• 0-29: No consideration of data subject rights or expectations.
+
+RED FLAG INDICATORS (automatically reduce scores):
+- Answers under 20 words (shows lack of analysis)
+- Generic responses like "no issues" or "no benefits"
+- No mention of data subject rights or privacy considerations
+- No consideration of alternatives or safeguards
+- Vague purposes like "analysis" or "research" without specifics
+- No acknowledgment of potential risks or ethical concerns
+
+OVERALL CONFIDENCE RATING CALCULATION:
+• Apply additional reductions for:
+  - Insufficient detail in responses (-10 to -20 points)
+  - Lack of legal awareness (-10 to -15 points)  
+  - Missing key privacy considerations (-5 to -15 points)
+  - Generic or dismissive answers (-5 to -20 points)
+
+CONSISTENCY REQUIREMENTS:
+1. If any individual test scores below 50, overall rating cannot exceed 60
+2. If 2+ tests score below 60, overall rating cannot exceed 50  
+3. Answers shorter than 15 words should be flagged as inadequate
+4. "No" or "None" answers without explanation should be scored as poor
+5. Missing consideration of data subject notification requirements should reduce scores
 
 Your confidence_rating (0-100) should reflect the overall robustness of the LIA:
 
-• 90-100: EXCELLENT - All three tests are thoroughly documented, legally sound, 
-          with clear justifications and appropriate safeguards. Minimal legal risk.
-
-• 80-89:  GOOD - Most aspects well-covered, minor gaps in documentation or 
-          safeguards. Generally compliant with manageable risk.
-
-• 70-79:  ACCEPTABLE - Basic requirements met but with noticeable deficiencies 
-          in one or more areas. Some legal risk present.
-
-• 60-69:  CONCERNING - Significant gaps in analysis, weak justifications, or 
-          inadequate safeguards. Substantial legal risk.
-
-• 50-59:  POOR - Major deficiencies across multiple areas. High legal risk, 
-          requires immediate attention. Lack of justifications in general.
-
-• 0-49:   INADEQUATE - Fundamental flaws in the assessment. Unacceptable legal 
-          risk, likely non-compliant with GDPR. No justifications in general.
+• 90-100: EXCELLENT - All three tests thoroughly documented and legally sound (average test scores 85+)
+• 80-89:  GOOD - Most aspects well-covered with minor gaps (average test scores 70-84)  
+• 70-79:  ACCEPTABLE - Basic requirements met with noticeable deficiencies (average test scores 60-69)
+• 60-69:  CONCERNING - Significant gaps and weak justifications (average test scores 45-59)
+• 50-59:  POOR - Major deficiencies across multiple areas (average test scores 30-44)
+• 0-49:   INADEQUATE - Fundamental flaws in assessment (average test scores below 30)
 
 REQUIRED OUTPUT FORMAT:
 
@@ -100,18 +122,29 @@ Return your analysis as a YAML document with the following structure:
 
 ```yaml
 confidence_rating: <integer 0-100>
+individual_test_scores:
+  purpose_test: <integer 0-100>  
+  necessity_test: <integer 0-100>
+  balancing_test: <integer 0-100>
+calculated_average: <float>
+applied_reductions: <integer> # Total points deducted for issues
 overall_assessment: "<brief summary of the LIA's compliance status>"
+scoring_rationale: "<explanation of how the confidence rating was calculated>"
 key_concerns:
   - "<specific concern 1>"
-  - "<specific concern 2>"
+  - "<specific concern 2>"  
   - "..."
 recommendations:
   - "<actionable recommendation 1>"
   - "<actionable recommendation 2>"
   - "..."
+red_flags_identified:
+  - "<red flag 1 if any>"
+  - "<red flag 2 if any>"
 section_analysis:
   purpose_test:
     score: <integer 0-100>
+    scoring_justification: "<why this score was given>"
     strengths:
       - "<strength 1>"
       - "<strength 2>"
@@ -121,6 +154,7 @@ section_analysis:
     comments: "<detailed analysis>"
   necessity_test:
     score: <integer 0-100>
+    scoring_justification: "<why this score was given>"
     strengths:
       - "<strength 1>"
       - "<strength 2>"
@@ -130,6 +164,7 @@ section_analysis:
     comments: "<detailed analysis>"
   balancing_test:
     score: <integer 0-100>
+    scoring_justification: "<why this score was given>"
     strengths:
       - "<strength 1>"
       - "<strength 2>"
@@ -142,6 +177,7 @@ compliance_status: "<COMPLIANT|PARTIALLY_COMPLIANT|NON_COMPLIANT>"
 ```
 
 Focus on providing specific, actionable insights based on GDPR requirements and data protection best practices.
+Be especially critical of brief, generic, or dismissive responses that show lack of proper legal analysis.
 """
 
 
@@ -159,7 +195,7 @@ def analyze_with_llm(lia_data: Dict, api_key: str, model: str = "o3") -> Dict:
                     {"role": "system", "content": "You are a data protection expert. Always return properly formatted YAML with all required fields."},
                     {"role": "user", "content": prompt}
                 ],
-                max_completion_tokens=5000
+                max_completion_tokens=20000
             )
             
             # Extract and parse YAML response with better error handling
@@ -388,10 +424,13 @@ def analyze_compliance_file(compliance_path: Path, api_key: str, model: str = "g
     return analysis, report
 
 
-# Simple usage
-if __name__ == "__main__":
+def main(model: str = None):
+    """Main entry point for compliance analysis."""
     api_key = os.getenv('OPENAI_API_KEY')
-    model = os.getenv('MODEL_NAME', 'o3-mini')  # Default fallback
+    
+    # Use provided model or environment variable, with gpt-4.1 as default fallback
+    if model is None:
+        model = os.getenv('MODEL_NAME', 'gpt-4.1')  # Changed default to gpt-4.1
     
     if not api_key:
         print("Error: OPENAI_API_KEY not found in environment")
@@ -407,6 +446,7 @@ if __name__ == "__main__":
     print("🔍 Starting LIA Analysis...")
     print(f"📁 Input file: {compliance_path}")
     print(f"📄 Output file: {output_path}")
+    print(f"🤖 Using model: {model}")
     print("-" * 50)
     
     try:
@@ -426,3 +466,8 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Error during analysis: {e}")
         exit(1)
+
+
+# Simple usage
+if __name__ == "__main__":
+    main()

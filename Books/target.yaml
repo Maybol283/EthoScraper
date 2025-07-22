@@ -1,0 +1,98 @@
+# target.yaml  –  dual-export configuration
+job_name: "Books"
+description: "Scrape books from books.toscrape.com"
+version: "1.0"
+
+# URL Configuration
+start_urls:
+  - "https://books.toscrape.com/"
+
+# Crawling Behavior
+crawl_settings:
+  max_depth: 2
+  max_pages: 10 # Good for testing
+  follow_links: true
+  allowed_domains:
+    - "books.toscrape.com"
+
+# Link Following Rules
+link_extraction:
+  follow_paths:
+    - "/catalogue/"
+    - "?page="
+    - "&page="
+
+  ignore_paths:
+    - "/similar/"
+
+  ignore_extensions: []
+
+  css_selectors:
+    - "article.product_pod h3 a" # Individual book links
+    - ".pagination a" # Pagination links
+    - "a[href*='page']" # Page links
+
+# Request Settings
+request_settings:
+  delay: 1.0 # Faster for testing
+  randomize_delay: true
+  concurrent_requests: 1
+  timeout: 30
+  retries: 3
+
+# Data Extraction
+extract_fields:
+  title:
+    selector: "h1::text"
+    transformations:
+      - strip: true
+    required: true
+    privacy:
+      pseudonymise: SHA256:6
+
+  price:
+    selector: ".product_main .price_color::text"
+    transformations:
+      - strip: true
+    required: false
+
+  rating:
+    selector: ".product_main .star-rating::attr(class)"
+    transformations:
+      - strip: true
+      - replace:
+          from: "star-rating "
+          to: ""
+    required: false
+
+  availability:
+    selector: ".product_main .availability::text"
+    transformations:
+      - strip: true
+    required: false
+
+  description:
+    selector: "#product_description  p::text"
+    transformations:
+      - strip: true
+    required: false
+
+  url:
+    selector: "response.url"
+    required: true
+
+# Content Filtering
+filters:
+  exclude_if:
+    - field: "title"
+      contains: "Admin"
+    - field: "department"
+      contains: "IT Support"
+
+# Output Configuration
+output:
+  file: "./output/university-staff-{timestamp}.csv"
+
+# Monitoring & Logging
+monitoring:
+  log_file: "./logs/{job_name}_{timestamp}.log"

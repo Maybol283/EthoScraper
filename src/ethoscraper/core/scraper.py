@@ -16,10 +16,97 @@ import json
 import csv
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Union
 import hashlib
 import time
+import glob
+import os
+
+
+def find_latest_lia_report(base_dir: str = "output") -> Optional[Path]:
+    """Find the most recent LIA analysis report in the specified directory."""
+    pattern = os.path.join(base_dir, "lia_analysis_report_*.md")
+    report_files = glob.glob(pattern)
+    
+    if not report_files:
+        return None
+    
+    # Sort by modification time, most recent first
+    report_files.sort(key=os.path.getmtime, reverse=True)
+    return Path(report_files[0])
+
+
+def parse_confidence_rating_from_report(report_path: Path) -> Optional[int]:
+    """Parse confidence rating from LIA analysis report markdown file."""
+    try:
+        with open(report_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Look for confidence rating in the markdown table
+        # Pattern: | **Overall Confidence Rating** | **XX/100** |
+        confidence_pattern = r'\|\s*\*\*Overall Confidence Rating\*\*\s*\|\s*\*\*(\d+)/100\*\*\s*\|'
+        match = re.search(confidence_pattern, content)
+        
+        if match:
+            return int(match.group(1))
+        
+        # Fallback pattern: look for "confidence_rating: XX" in YAML sections
+        yaml_pattern = r'confidence_rating:\s*(\d+)'
+        match = re.search(yaml_pattern, content)
+        
+        if match:
+            return int(match.group(1))
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error parsing LIA report {report_path}: {e}")
+        return None
+
+
+def validate_lia_compliance(target_file: str = None, force: bool = False) -> bool:
+    """Validate that LIA analysis has been performed with acceptable confidence rating."""
+    if force:
+        print("⚠️  WARNING: LIA validation bypassed with --force flag")
+        return True
+    
+    # Determine base directory for reports
+    if target_file:
+        base_dir = Path(target_file).parent / "output"
+    else:
+        base_dir = Path("output")
+    
+    # Find the latest LIA report
+    latest_report = find_latest_lia_report(str(base_dir))
+    
+    if not latest_report:
+        print("❌ ERROR: No LIA analysis report found!")
+        print("   Please run 'ethoscraper analyze' first to generate an LIA analysis report.")
+        print("   Or use --force to bypass this requirement (not recommended).")
+        return False
+    
+    # Parse confidence rating
+    confidence_rating = parse_confidence_rating_from_report(latest_report)
+    
+    if confidence_rating is None:
+        print(f"❌ ERROR: Could not parse confidence rating from {latest_report}")
+        print("   Please ensure the LIA report is valid.")
+        print("   Or use --force to bypass this requirement (not recommended).")
+        return False
+    
+    print(f"📋 Found LIA analysis report: {latest_report.name}")
+    print(f"📊 Confidence Rating: {confidence_rating}/100")
+    
+    if confidence_rating < 70:
+        print("❌ ERROR: LIA confidence rating is below 70 (minimum required)")
+        print("   Current rating indicates significant legal risks.")
+        print("   Please review and improve your LIA before scraping.")
+        print("   Or use --force to bypass this requirement (not recommended).")
+        return False
+    
+    print("✅ LIA validation passed - confidence rating meets minimum requirements")
+    return True
 
 
 class EthicalSpider(CrawlSpider):
@@ -366,9 +453,15 @@ class EthicalSpider(CrawlSpider):
                 item[field_name] = error_value
         
         # Add metadata
-        item['scraped_at'] = datetime.now().isoformat()
+        current_time = datetime.now()
+        item['scraped_at'] = current_time.isoformat()
         item['source_url'] = response.url
         item['response_time'] = response.meta.get('download_latency', 0)
+        
+        # Add GDPR compliance columns
+        contact_by_date = current_time + timedelta(days=30)
+        item['contact_by'] = contact_by_date.isoformat()
+        item['user_contacted'] = False
         
         return item
     
@@ -672,15 +765,21 @@ class EthicalSpider(CrawlSpider):
         return values
 
 
-def run_ethical_scraper(target_file: str, max_pages: int = None, **kwargs):
+def run_ethical_scraper(target_file: str, max_pages: int = None, force: bool = False, **kwargs):
     """
     Run the ethical scraper with target configuration.
     
     Args:
         target_file: Path to target.yaml configuration file
         max_pages: Maximum number of pages to scrape (overrides config)
+        force: Bypass LIA validation requirements
         **kwargs: Additional spider arguments
     """
+    
+    # Validate LIA compliance before starting scrape
+    if not validate_lia_compliance(target_file, force):
+        print("\n🛑 Scraping aborted due to LIA compliance issues")
+        exit(1)
     
     # Configure Scrapy settings
     settings = get_project_settings()
@@ -700,19 +799,28 @@ def run_ethical_scraper(target_file: str, max_pages: int = None, **kwargs):
     process.start()
 
 
-# Example usage
-if __name__ == "__main__":
+def main():
+    """Main entry point for scraper."""
     import sys
+    import argparse
     
-    if len(sys.argv) < 2:
-        print("Usage: python scraper.py <target.yaml> [max_pages]")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Ethical web scraper')
+    parser.add_argument('target_file', help='Target YAML configuration file')
+    parser.add_argument('--max-pages', type=int, help='Maximum pages to scrape')
+    parser.add_argument('--force', action='store_true', 
+                       help='Bypass LIA validation requirements (not recommended)')
     
-    target_file = sys.argv[1]
-    max_pages = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    args = parser.parse_args()
     
-    print(f"🎯 Starting targeted scraping with: {target_file}")
-    print(f"📄 Max pages: {max_pages or 'From config'}")
+    print(f"🎯 Starting targeted scraping with: {args.target_file}")
+    print(f"📄 Max pages: {args.max_pages or 'From config'}")
+    if args.force:
+        print("⚠️  Force mode enabled - LIA validation will be bypassed")
     print("-" * 50)
     
-    run_ethical_scraper(target_file, max_pages)
+    run_ethical_scraper(args.target_file, args.max_pages, args.force)
+
+
+# Example usage
+if __name__ == "__main__":
+    main()

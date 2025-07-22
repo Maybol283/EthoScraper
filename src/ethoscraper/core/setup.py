@@ -725,19 +725,25 @@ def run_lia_wizard(project_dir: Path, target_url: str) -> None:
     _write_to_compliance_yaml(compliance_path, "dpia_screening", dpia_data)
     
     if dpia_required:
-        print(f"\n⚠️  DPIA is REQUIRED based on the flagged criteria: {', '.join(flagged_criteria)}")
-        print("You should conduct a full DPIA before proceeding with scraping.\n")
-        print("While the LIA is a good start, it is not a substitute for a full DPIA\nwhich will require a more detailed consulation with experts.\n")
-        print("For more information on DPIAs, please refer to the GDPR and the UK DPA.\n")
-        print("You can find the full text of the GDPR and the UK DPA at the following links:")
-        print("https://gdpr.eu/gdpr-guide/") # TODO: add links to the GDPR and the UK DPA
-        print("https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/how-do-we-do-a-dpia/")
-        answer = input("Completing an LIA and will assist you in the DPIA process in the future. \n Do you want to proceed with the LIA assessment? (y/n): ")
-        if answer.strip().lower() == "n":
-            print("Please rerun the wizard again when you are ready.")
-            return False, []
-        else:
-            print("Proceeding with the LIA assessment...\n")
+        print(f"\n❌ DPIA is REQUIRED based on the flagged criteria: {', '.join(flagged_criteria)}")
+        print("=" * 70)
+        print("🛑 PROJECT SETUP TERMINATED")
+        print("=" * 70)
+        print("\n❗ IMPORTANT: You MUST conduct a full Data Protection Impact Assessment (DPIA)")
+        print("   before proceeding with any data processing activities.\n")
+        print("📋 DPIA results have been recorded in compliance.yaml")
+        print(f"   File location: {compliance_path}")
+        print("\n📚 For guidance on conducting a DPIA, refer to:")
+        print("   • GDPR Articles 35-36")
+        print("   • ICO DPIA guidance: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/")
+        print("   • EU GDPR guide: https://gdpr.eu/data-protection-impact-assessment-template/")
+        print("\n⚠️  Do not proceed with scraping until you have:")
+        print("   1. Completed a full DPIA")
+        print("   2. Implemented necessary safeguards")
+        print("   3. Obtained any required approvals")
+        print("\n🔄 You may re-run this setup after completing your DPIA.")
+        print("=" * 70)
+        return  # Terminate program - no LIA wizard
     else:
         print(f"\n✅ DPIA is not required based on current assessment.\n")
         input("Press Enter to continue with the LIA assessment...")
@@ -753,8 +759,8 @@ def run_lia_wizard(project_dir: Path, target_url: str) -> None:
     print("Are you ready to proceed? (y/n): ")
     proceed = input().strip().lower()
     if proceed == "n":
-        print("Please rerun the wizard again when you are ready.")
-        return False, []
+        print("Setup incomplete. Please rerun the wizard when you are ready.")
+        return
     
     # Initialize the LIA structure with empty subsections
     lia_structure = {

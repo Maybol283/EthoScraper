@@ -1,0 +1,50 @@
+target_url: https://books.toscrape.com
+project_name: Books
+report_timestamp: "2025-07-18T12:37:33.175960"
+pre_checks:
+  cache_status: miss
+  robots_txt_confirmed: true
+data_assessment:
+  category: Personal Data
+examples_provided:
+  - names/location/contact information
+dpia_screening:
+  required: false
+  flagged_criteria: []
+legitimate_interest_assessment:
+  required: false
+  outcome: Proceed
+  purpose_test:
+    why_scraping: to analyse trends book purchases and reviews
+    benefit_to_organisation: to improve our understanding of book sales and reviews
+    third_party_benefits: no direct benefits
+    public_societal_benefits: no direct benefits
+    if_couldnt_process: we would not be able to analyse trends in book purchases and reviews
+    positive_outcome_individuals: no direct benefits
+    ethical_issues: no ethical issues
+  necessity_test:
+    will_processing_help_achieve_purpose: yes it will help us achieve our purpose
+    is_processing_proportionate: yes it is proportionate
+    can_achieve_without_processing: no we cannot achieve our purpose without processing data
+    can_achieve_less_intrusively: no we cannot achieve our purpose less intrusively
+  balancing_test:
+    processing_special_category_data: "No"
+    processing_criminal_data: "No"
+    processing_private_data: "No"
+    processing_vulnerable_data: "No"
+    data_personal_or_professional_capacity: "No"
+    what_told_individuals_at_collection: We will inform individuals within 2 weeks through an email link which will allow them to opt out of the processing
+    third_party_disclosure_about_reuse: The third party website does not explicitly whether we can reuse their data
+    data_collection_age_and_context_changes: nope
+    purpose_and_method_obvious_or_understood: The gathering of this data is not obvious to the data subjects, however the purpose would be widely understood.
+    using_innovative_processing_methods: "no"
+    evidence_about_individual_expectations: no we do not have evidence about expectations
+    other_factors_affecting_expectations: no we do not have other factors that would affect whether individuals expect this processing
+pseudonymised_fields:
+  email: SHA256
+  url: Stub
+columns_dropped:
+  - name
+final_outcome:
+  decision: Proceed with scraping
+  timestamp: "2025-06-13T10:51:21Z"
