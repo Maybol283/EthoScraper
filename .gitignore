@@ -1,3 +1,6 @@
 secrets.env
 /output
 /logs
+__pycache__/
+/tests
+/Books

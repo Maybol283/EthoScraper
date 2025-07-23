@@ -231,6 +231,48 @@ def _write_to_compliance_yaml(compliance_path: Path, section_path: str, data: di
         print(f"Error writing to {compliance_path}: {e}")
 
 
+def _write_value_to_compliance_yaml(compliance_path: Path, section_path: str, value) -> None:
+    """
+    Write a value (dict, list, or primitive) directly to a specific section in the compliance.yaml file.
+    
+    Args:
+        compliance_path: Path to the compliance.yaml file
+        section_path: Dot-separated path to the section (e.g., "examples_provided")
+        value: Value to write to that section (can be dict, list, string, etc.)
+    """
+    # Load existing YAML
+    try:
+        with open(compliance_path, 'r', encoding='utf-8') as f:
+            compliance_data = yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f"Warning: {compliance_path} not found. Cannot write to compliance file.")
+        return
+    except Exception as e:
+        print(f"Error reading {compliance_path}: {e}")
+        return
+    
+    # Navigate to the correct section
+    current_section = compliance_data
+    path_parts = section_path.split('.')
+    
+    # Navigate to the parent section
+    for part in path_parts[:-1]:
+        if part not in current_section:
+            current_section[part] = {}
+        current_section = current_section[part]
+    
+    # Set the final value directly
+    final_key = path_parts[-1]
+    current_section[final_key] = value
+    
+    # Write back to file
+    try:
+        with open(compliance_path, 'w', encoding='utf-8') as f:
+            yaml.dump(compliance_data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    except Exception as e:
+        print(f"Error writing to {compliance_path}: {e}")
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Data Protection Impact Assessment
 # ──────────────────────────────────────────────────────────────────────────────
@@ -797,6 +839,92 @@ def run_lia_wizard(project_dir: Path, target_url: str) -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Data Categorization Assessment
+# ──────────────────────────────────────────────────────────────────────────────
+
+def data_categorization_assessment(target_url: str, compliance_path: Path) -> str:
+    """
+    Assess the category of data being processed to determine compliance requirements.
+    
+    Returns:
+        str: 'non_personal' or 'personal'
+    """
+    print("=== DATA CATEGORIZATION ASSESSMENT ===\n")
+    print("Before we proceed with compliance assessments, let's determine what type")
+    print("of data you'll be processing. This helps us understand which legal")
+    print("requirements apply to your project.\n")
+    
+    print("We'll ask you a few simple questions to categorize your data.\n")
+    input("Press Enter when ready to begin the Data Categorization Assessment...")
+    print()
+    
+    # Question 1: Basic data type check
+    print("1. What type of information will you be collecting?")
+    print("   Examples:")
+    print("   • NON-PERSONAL: Product prices, weather data, stock prices, news headlines")
+    print("   • PERSONAL: Names, email addresses, user comments, IP addresses, usernames")
+    print()
+    
+    data_examples = input("Please describe the specific type of data you'll be collecting: ").strip()
+    while len(data_examples) < 10:
+        print("Please provide a more detailed description (at least 10 characters).")
+        data_examples = input("Please describe the specific type of data you'll be collecting: ").strip()
+    
+    print()
+    
+    # Question 2: Personal identification check
+    print("2. Can this data be used to identify individual people?")
+    print("   This includes:")
+    print("   • Direct identification: names, email addresses, phone numbers")
+    print("   • Indirect identification: IP addresses, usernames, device IDs")
+    print("   • Combined identification: data that could identify someone when combined")
+    print()
+    
+    can_identify = input("Can the data identify individuals? (Y/N): ").strip().lower()
+    
+    if can_identify in ['n', 'no']:
+        category = 'non_personal'
+        print("\n✅ DATA CATEGORIZATION: NON-PERSONAL DATA")
+        print("Since this data cannot identify individuals, GDPR compliance")
+        print("assessments (DPIA and LIA) are not required.\n")
+        
+        # Write results to compliance.yaml using existing template structure
+        data_assessment_data = {
+            "category": "Non-Personal Data"
+        }
+        _write_to_compliance_yaml(compliance_path, "data_assessment", data_assessment_data)
+        
+        # Write examples as a list
+        examples_data = [data_examples]
+        _write_value_to_compliance_yaml(compliance_path, "examples_provided", examples_data)
+        
+        print("Data categorization has been recorded in compliance.yaml")
+        input("Press Enter to complete the setup...")
+        return category
+    
+    # Personal data path
+    category = 'personal'
+    print("\n📋 DATA CATEGORIZATION: PERSONAL DATA")
+    print("This data is subject to GDPR requirements and needs compliance assessment.")
+    print("Proceeding with DPIA screening and LIA assessment...\n")
+    
+    # Write results to compliance.yaml using existing template structure
+    data_assessment_data = {
+        "category": "Personal Data"
+    }
+    _write_to_compliance_yaml(compliance_path, "data_assessment", data_assessment_data)
+    
+    # Write examples as a list
+    examples_data = [data_examples]
+    _write_value_to_compliance_yaml(compliance_path, "examples_provided", examples_data)
+    
+    print("Data categorization has been recorded in compliance.yaml")
+    input("Press Enter to continue with compliance assessments...")
+    
+    return category
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Main orchestration
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -825,6 +953,27 @@ def run_wizard_for_existing_project() -> None:
         print(f"Running LIA wizard for project in: {project_dir.resolve()}")
         print(f"Target URL: {target_url}\n")
         
+        # Check if data categorization has been done
+        compliance_path = project_dir / "output" / "compliance.yaml"
+        if compliance_path.exists():
+            try:
+                with open(compliance_path, 'r', encoding='utf-8') as f:
+                    compliance_data = yaml.safe_load(f)
+                    data_assessment = compliance_data.get('data_assessment', {})
+                    if data_assessment.get('category') == 'Non-Personal Data':
+                        print("✅ Data categorization indicates NON-PERSONAL data.")
+                        print("No compliance assessments required. Setup is complete.")
+                        return
+            except Exception:
+                pass  # Continue with normal flow if we can't read the file
+        
+        # Run data categorization first
+        data_category = data_categorization_assessment(target_url, compliance_path)
+        
+        if data_category == 'non_personal':
+            return  # Exit early for non-personal data
+        
+        # Continue with LIA wizard for personal data
         run_lia_wizard(project_dir, target_url)
         
     except Exception as e:
@@ -861,11 +1010,24 @@ def main() -> None:  # pragma: no cover
         copy_and_customize_templates(target_dir, output_dir, project_name, target_url)
         
         print(f"\nProject successfully setup in {target_dir.resolve()}")
-        proceed = input("Would you like to run the LIA wizard now? (y/n): ")
+        
+        # Run data categorization assessment
+        compliance_path = output_dir / "compliance.yaml" 
+        data_category = data_categorization_assessment(target_url, compliance_path)
+        
+        # Only proceed with LIA/DPIA if processing personal data
+        if data_category == 'non_personal':
+            print("\n✅ Setup complete! No further compliance assessments required.")
+            print(f"Your project is ready at: {target_dir.resolve()}")
+            return
+        
+        # For personal data, offer to run LIA wizard
+        print()
+        proceed = input("Would you like to run the compliance assessments (DPIA and LIA) now? (y/n): ")
         if proceed == "y":
             run_lia_wizard(target_dir, target_url)
         else:
-            print(f"To complete the setup, run the LIA wizard:")
+            print(f"To complete the compliance setup, run:")
             print(f"  cd {target_dir}")
             print(f"  python -m ethoscraper.setup --lia-wizard")
         

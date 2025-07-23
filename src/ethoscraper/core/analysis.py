@@ -108,13 +108,16 @@ CONSISTENCY REQUIREMENTS:
 5. Missing consideration of data subject notification requirements should reduce scores
 
 Your confidence_rating (0-100) should reflect the overall robustness of the LIA:
-
 • 90-100: EXCELLENT - All three tests thoroughly documented and legally sound (average test scores 85+)
 • 80-89:  GOOD - Most aspects well-covered with minor gaps (average test scores 70-84)  
 • 70-79:  ACCEPTABLE - Basic requirements met with noticeable deficiencies (average test scores 60-69)
 • 60-69:  CONCERNING - Significant gaps and weak justifications (average test scores 45-59)
 • 50-59:  POOR - Major deficiencies across multiple areas (average test scores 30-44)
 • 0-49:   INADEQUATE - Fundamental flaws in assessment (average test scores below 30)
+
+Compliant/Low Risk = 80 - 100
+Partially Compliant/Medium Risk = 60 - 79
+Non-Compliant/High Risk = 0 - 59
 
 REQUIRED OUTPUT FORMAT:
 

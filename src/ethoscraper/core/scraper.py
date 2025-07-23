@@ -66,22 +66,76 @@ def parse_confidence_rating_from_report(report_path: Path) -> Optional[int]:
 
 
 def validate_lia_compliance(target_file: str = None, force: bool = False) -> bool:
-    """Validate that LIA analysis has been performed with acceptable confidence rating."""
+    """
+    Validate compliance requirements based on data categorization and LIA analysis.
+    
+    For non-personal data: Skip LIA validation entirely
+    For personal data: Validate LIA analysis report with confidence rating
+    """
     if force:
         print("⚠️  WARNING: LIA validation bypassed with --force flag")
         return True
     
-    # Determine base directory for reports
+    # Determine base directory for compliance files
     if target_file:
         base_dir = Path(target_file).parent / "output"
     else:
         base_dir = Path("output")
     
-    # Find the latest LIA report
+    # Check compliance.yaml first
+    compliance_path = base_dir / "compliance.yaml"
+    
+    if not compliance_path.exists():
+        print("❌ ERROR: No compliance.yaml file found!")
+        print("   Please run the project setup first to generate compliance configuration.")
+        print("   Or use --force to bypass this requirement (not recommended).")
+        return False
+    
+    try:
+        with open(compliance_path, 'r', encoding='utf-8') as f:
+            compliance_data = yaml.safe_load(f)
+        
+        # Check data categorization
+        data_assessment = compliance_data.get('data_assessment', {})
+        data_category = data_assessment.get('category')
+        
+        if data_category == 'Non-Personal Data':
+            print("✅ NON-PERSONAL DATA: No LIA validation required")
+            print("   Data categorization indicates this project processes non-personal data.")
+            print("   GDPR compliance assessments are not applicable.")
+            return True
+        
+        # Check DPIA and LIA requirements for personal data
+        dpia_screening = compliance_data.get('dpia_screening', {})
+        dpia_required = dpia_screening.get('required', True)  # Default to True for safety
+        
+        # Check if LIA assessment exists (indicates personal data processing)
+        lia_assessment = compliance_data.get('legitimate_interest_assessment')
+        
+        # If both DPIA is not required AND no LIA assessment exists, it's likely non-personal data
+        if not dpia_required and not lia_assessment:
+            print("✅ NO COMPLIANCE ASSESSMENTS REQUIRED")
+            print("   DPIA screening: Not required")
+            print("   LIA assessment: Not performed")
+            print("   Proceeding with scraping...")
+            return True
+        
+        # For personal data, validate LIA analysis report
+        print("📋 PERSONAL DATA DETECTED: Validating LIA analysis...")
+        print(f"   Data category: {data_category or 'personal'}")
+        print(f"   DPIA required: {'Yes' if dpia_required else 'No'}")
+        
+    except Exception as e:
+        print(f"❌ ERROR: Could not read compliance.yaml: {e}")
+        print("   Please ensure the compliance file is valid.")
+        return False
+    
+    # Continue with LIA report validation for personal data
     latest_report = find_latest_lia_report(str(base_dir))
     
     if not latest_report:
         print("❌ ERROR: No LIA analysis report found!")
+        print("   Personal data processing requires completed LIA analysis.")
         print("   Please run 'ethoscraper analyze' first to generate an LIA analysis report.")
         print("   Or use --force to bypass this requirement (not recommended).")
         return False
@@ -459,11 +513,22 @@ class EthicalSpider(CrawlSpider):
         item['response_time'] = response.meta.get('download_latency', 0)
         
         # Add GDPR compliance columns
-        contact_by_date = current_time + timedelta(days=30)
-        item['contact_by'] = contact_by_date.isoformat()
-        item['user_contacted'] = False
-        
-        return item
+        compliance_path = Path('output/compliance.yaml')
+        with open(compliance_path, 'r', encoding='utf-8') as f:
+            compliance_data = yaml.safe_load(f)
+            data_assessment = compliance_data.get('data_assessment', {})
+            if data_assessment.get('category') == 'Non-Personal Data':
+                add_fields = False
+            else:
+                add_fields = True
+                
+        if add_fields == True:
+            item['contact_by'] = current_time + timedelta(days=30)
+            item['user_contacted'] = False
+            return item
+        else:
+            return item
+       
     
     def _extract_nested_field(self, response, field_config: Dict) -> Any:
         """Extract data using nested field configuration."""

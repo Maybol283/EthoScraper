@@ -19,20 +19,21 @@ Examples:
   ethoscraper setup                    # Create new project with LIA wizard
   ethoscraper analyze                  # Analyze compliance.yaml in current dir
   ethoscraper analyze --model o3       # Use specific model for analysis
-  ethoscraper scrape target.yaml      # Run scraper with target configuration
-  ethoscraper scrape target.yaml --force  # Bypass LIA validation (not recommended)
+  ethoscraper scrape                   # Run scraper (uses target.yaml in current dir)
+  ethoscraper scrape --force           # Bypass LIA validation (not recommended)
+  ethoscraper scrape custom.yaml      # Use specific target file
   
   # Or use specific commands:
   ethoscraper-setup                    # Project setup
   ethoscraper-analyze                  # Compliance analysis  
-  ethoscraper-scrape target.yaml      # Web scraping
+  ethoscraper-scrape                   # Web scraping (auto-detects target.yaml)
         """
     )
     
     parser.add_argument('command', nargs='?', choices=['setup', 'analyze', 'scrape'], 
                         help='Command to run')
     parser.add_argument('target_file', nargs='?', 
-                        help='Target YAML file (for scrape command)')
+                        help='Target YAML file (optional - defaults to target.yaml in current directory)')
     parser.add_argument('--max-pages', type=int, 
                         help='Maximum pages to scrape')
     parser.add_argument('--model', type=str, default='gpt-4.1',
@@ -57,13 +58,22 @@ Examples:
             analyze_main(model=args.model)
             
         elif args.command == 'scrape':
+            # Auto-detect target.yaml if not specified
             if not args.target_file:
-                print("Error: target_file is required for scrape command")
-                print("Usage: ethoscraper scrape target.yaml")
-                sys.exit(1)
+                target_path = Path("target.yaml")
+                if target_path.exists():
+                    target_file = "target.yaml"
+                    print(f"🎯 Using target.yaml from current directory")
+                else:
+                    print("❌ Error: No target.yaml found in current directory")
+                    print("   Please ensure you're in a project directory with target.yaml")
+                    print("   Or specify the target file: ethoscraper scrape path/to/target.yaml")
+                    sys.exit(1)
+            else:
+                target_file = args.target_file
             
             from ethoscraper.core.scraper import run_ethical_scraper
-            run_ethical_scraper(args.target_file, args.max_pages, args.force)
+            run_ethical_scraper(target_file, args.max_pages, args.force)
             
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")

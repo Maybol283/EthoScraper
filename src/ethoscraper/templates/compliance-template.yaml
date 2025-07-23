@@ -8,7 +8,6 @@ report_timestamp: "2025-06-13T10:51:21Z"
 
 # --- Pre-Scraping Checks ---
 pre_checks:
-  cache_status: "miss" # Records if the URL was found in the cache.
   robots_txt_confirmed: true # Records that the user confirmed the robots.txt file.
 
 # --- Data Categorization ---
@@ -27,15 +26,3 @@ dpia_screening:
 legitimate_interest_assessment:
   required: false
   outcome: "Proceed" # Reflects that the user did not choose to exit the process.
-
-# --- Data Processing ---
-pseudonymised_fields:
-  email: "SHA256"
-  url: "Stub"
-
-columns_dropped: ["name"]
-
-# --- Final Decision ---
-final_outcome:
-  decision: "Proceed with scraping"
-  timestamp: "2025-06-13T10:51:21Z"
