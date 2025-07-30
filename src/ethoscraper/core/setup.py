@@ -309,35 +309,35 @@ def dpia_screening() -> tuple[bool, list[str]]:
     # NEW: illustrative examples for each criterion
     examples = {
         "evaluation_scoring": [
-            " Building credit-scores from banking and salary data.",
-            " Predicting health risks from consumer DNA tests."
+            " Scraping user reviews to build automated product quality scores.",
+            " Creating business reputation rankings from customer feedback data."
         ],
         "automated_decisions": [
-            " Auto-approving or rejecting loan applications with no human review."
+            " Auto-blocking competitor websites from price comparison tools based on scraped data."
         ],
         "systematic_monitoring": [
-            " Continuous CCTV + face recognition in a shopping mall."
+            " Continuously monitoring social media accounts and forum posts for brand mentions."
         ],
         "sensitive_or_special": [
-            " Hospital storing patient medical records (health data)."
+            " Scraping health forum discussions or political opinion posts from social media."
         ],
         "large_scale": [
-            " Tracking location data from millions of mobile devices for six months."
+            " Collecting user-generated content from millions of web pages over extended periods."
         ],
         "matching_combining": [
-            " Combining loyalty-card data with social-media profiles to build",
-            " detailed marketing segments."
+            " Combining scraped social media profiles with e-commerce data to build",
+            " comprehensive customer profiles for targeted marketing."
         ],
         "vulnerable_subjects": [
-            " Collecting classroom attendance records of children."
+            " Scraping data from job-seeking websites or platforms used by minors."
         ],
         "innovative_use": [
-            " Using an experimental AI model to predict employee attrition from",
-            " email sentiment."
+            " Using advanced AI to analyze scraped personal communications for",
+            " emotional state prediction or behavioral modeling."
         ],
         "rights_prevention": [
-            " Screening customers against a credit database to decide if they may",
-            " open a bank account."
+            " Using scraped data to blacklist individuals from accessing certain",
+            " online services or marketplaces."
         ],
     }
 
@@ -389,60 +389,62 @@ def purpose_test(target_url: str, compliance_path: Path) -> list[str]:
             "question": "1. Why are you scraping this website?",
             "yaml_key": "why_scraping",
             "examples": [
-                " To analyse trends in how UK residents discuss local",
-                " air-quality measures on publicly available newspaper",
-                " comment sections and community forums."
+                " To collect product information and pricing data from e-commerce",
+                " sites for market research and competitive analysis purposes."
             ]
         },
         "benefit_org": {
             "question": "2. Benefit to our organisation?",
             "yaml_key": "benefit_to_organisation",
             "examples": [
-                " Peer-reviewed publications and REF impact case-study;",
-                " Evidence base for grant applications on urban pollution",
-                " mitigation."
+                " Improved market intelligence for strategic decision-making;",
+                " Cost savings through automated data collection versus manual",
+                " research methods."
             ]
         },
         "third_party": {
             "question": "3. Third-party benefits?",
             "yaml_key": "third_party_benefits",
             "examples": [
-                " Local authorities and campaign groups gain anonymised",
-                " insights into public sentiment for policy design."
+                " Research institutions and consumer advocacy groups can access",
+                " anonymised market trend data for academic studies and",
+                " consumer protection initiatives."
             ]
         },
         "public_benefit": {
             "question": "4. Wider public/societal benefits?",
             "yaml_key": "public_societal_benefits",
             "examples": [
-                " Better-targeted public-health messaging and",
-                " environmental interventions."
+                " Enhanced price transparency in the marketplace and",
+                " better-informed consumer decision-making through",
+                " aggregated market data analysis."
             ]
         },
         "no_process": {
             "question": "5. What would happen if we couldn't process this data?",
             "yaml_key": "if_couldnt_process",
             "examples": [
-                " We would rely on expensive, limited survey panels,",
-                " missing authentic grassroots discourse."
+                " We would need to conduct expensive manual market research,",
+                " resulting in slower response times and less comprehensive",
+                " competitive intelligence."
             ]
         },
         "positive_outcome": {
             "question": "6. Are there any positive outcomes for individuals involved in the processing?",
             "yaml_key": "positive_outcome_individuals",
             "examples": [
-                " Voices expressed in small regional outlets are surfaced",
-                " to policy-makers, potentially improving neighbourhood",
-                " air quality."
+                " Website owners benefit from increased visibility and traffic",
+                " analytics, while consumers benefit from more comprehensive",
+                " price comparison services."
             ]
         },
         "ethical_issues": {
             "question": "7. Are there any ethical issues with the processing?",
             "yaml_key": "ethical_issues",
             "examples": [
-                " Risk of re-identifying individuals from small forums.",
-                " Mitigated by aggregating data, removing usernames, and",
-                " focusing on themes rather than individual opinions."
+                " Risk of overwhelming target servers with excessive requests.",
+                " Mitigated by implementing respectful crawling delays, following",
+                " robots.txt guidelines, and limiting request frequency."
             ]
         }
     }
@@ -486,9 +488,9 @@ def necessity_test(target_url: str, compliance_path: Path) -> list[str]:
             "question": "1. Will the processing actually help you achieve your purpose?",
             "yaml_key": "will_processing_help_achieve_purpose",
             "examples": [
-                " Yes, analysing public discourse requires processing the text",
-                " content and associated metadata to identify themes and",
-                " geographical patterns in air quality discussions."
+                " Yes, collecting product data and pricing information requires",
+                " processing the structured and unstructured web content to",
+                " extract relevant business intelligence and market trends."
             ]
         },
         "proportionate": {
@@ -496,26 +498,26 @@ def necessity_test(target_url: str, compliance_path: Path) -> list[str]:
             "yaml_key": "is_processing_proportionate",
             "examples": [
                 " The processing is proportionate - we only collect publicly",
-                " available comments and aggregate them for thematic analysis,",
-                " not individual profiling or intrusive monitoring."
+                " available product information and aggregate it for market",
+                " analysis, not for individual tracking or personal profiling."
             ]
         },
         "achieve_without": {
             "question": "3. Can you achieve your purpose without processing the data, or by processing less data?",
             "yaml_key": "can_achieve_without_processing",
             "examples": [
-                " No, we cannot achieve meaningful trend analysis without",
-                " processing the text data. However, we limit collection to",
-                " relevant discussion threads only."
+                " No, we cannot achieve comprehensive market analysis without",
+                " processing the web data. However, we limit collection to",
+                " specific product categories and publicly available information."
             ]
         },
         "less_intrusive": {
             "question": "4. Can you achieve your purpose by processing the data in another more obvious or less intrusive way?",
             "yaml_key": "can_achieve_less_intrusively",
             "examples": [
-                " Alternative approaches like surveys would be less",
-                " representative and more intrusive. Public forum analysis",
-                " is the least invasive method for this research question."
+                " Alternative approaches like manual research or expensive",
+                " market reports would be less efficient and comprehensive.",
+                " Web scraping is the least intrusive automated method available."
             ]
         }
     }
@@ -565,9 +567,9 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             "yaml_key": "processing_special_category_data",
             "examples": None,
             "followup_examples": [
-                " We are processing health data from patient medical records that include",
-                " diagnoses, treatment histories, and genetic test results for individuals",
-                " participating in a clinical research study."
+                " We are processing user-generated content that may reveal political",
+                " opinions or religious beliefs from forum posts, social media profiles,",
+                " or review comments that express personal viewpoints."
             ]
         },
         "criminal_data": {
@@ -575,9 +577,9 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             "yaml_key": "processing_criminal_data",
             "examples": None,
             "followup_examples": [
-                " We are processing conviction data from court records. Data includes conviction",
-                " dates, offence types, and sentencing outcomes from publicly",
-                " available court databases."
+                " We are processing publicly available legal documents or news",
+                " articles that reference criminal convictions, court cases, or",
+                " legal proceedings involving named individuals."
             ]
         },
         "private_data": {
@@ -585,10 +587,9 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             "yaml_key": "processing_private_data",
             "examples": None,
             "followup_examples": [
-                " We are processing financial transaction data from bank",
-                " statements. Data includes",
-                " transaction amounts, merchant categories, and spending",
-                " patterns from anonymized customer records."
+                " We are processing salary information, property values, or",
+                " financial details from publicly available real estate listings,",
+                " job postings, or business registration documents."
             ]
         },
         "vulnerable_data": {
@@ -596,24 +597,23 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             "yaml_key": "processing_vulnerable_data",
             "examples": None,
             "followup_examples": [
-                " We are processing educational records of children aged 13-16",
-                " Data includes test scores,",
-                " attendance records, and demographic information with parental",
-                " consent and school ethics approval."
+                " We are processing user profiles or content from platforms",
+                " where minors may be present, or collecting data from websites",
+                " specifically targeting vulnerable populations like job seekers."
             ]
         },
         "personal_or_professional": {
             "question": "5. Is the data about people in their personal or professional capacity?",
             "yaml_key": "data_personal_or_professional_capacity",
             "examples": [
-                " Mixed - some comments may be from individuals in personal",
-                " capacity (residents discussing local air quality) and some",
-                " in professional capacity (officials, experts)."
+                " Mixed - some data may be from individuals in personal capacity",
+                " (customer reviews, personal social media posts) and some in",
+                " professional capacity (business profiles, professional networks)."
             ],
             "followup_examples": [
-                " The data includes both personal capacity individuals (local residents",
-                " discussing environmental concerns in their neighborhoods) and professional",
-                " capacity individuals (environmental officials, scientists, policy makers)."
+                " The data includes both personal capacity individuals (customers",
+                " writing product reviews, personal blog posts) and professional",
+                " capacity individuals (business owners, employees on professional sites)."
             ]
         }
     }
@@ -665,53 +665,53 @@ def balance_test(target_url: str, compliance_path: Path) -> list[str]:
             "yaml_key": "what_told_individuals_at_collection",
             "examples": [
                 " Not applicable - we did not collect data directly from",
-                " individuals. The data comes from public forums and",
-                " newspaper comment sections."
+                " individuals. The data comes from publicly accessible",
+                " websites, e-commerce platforms, and online directories."
             ]
         },
         "third_party_told": {
             "question": "2. If obtained from third party, what did they tell individuals about reuse by third parties?",
             "yaml_key": "third_party_disclosure_about_reuse",
             "examples": [
-                " The website terms of service typically state that comments",
-                " may be used for research purposes or by third parties.",
-                " Forum policies generally allow academic research use."
+                " The website terms of service typically state that publicly",
+                " posted information may be accessed and used by third parties",
+                " for legitimate business purposes including market research."
             ]
         },
         "obvious_purpose": {
             "question": "3. Is your intended purpose and method obvious or widely understood by your data subjects?",
             "yaml_key": "purpose_and_method_obvious_or_understood",
             "examples": [
-                " Academic research on public environmental discourse is",
-                " widely understood and accepted. The purpose of analyzing",
-                " public sentiment on air quality is straightforward."
+                " Market research and competitive analysis using publicly",
+                " available data is widely understood as a legitimate business",
+                " practice. Web scraping for market intelligence is standard."
             ]
         },
         "innovative_processing": {
             "question": "4. Are you doing anything new or innovative with the data?",
             "yaml_key": "using_innovative_processing_methods",
             "examples": [
-                " The research methods are standard (thematic analysis",
-                " of public comments). We are not using novel AI techniques",
-                " or innovative processing methods."
+                " The processing methods are standard (data extraction and",
+                " analysis for market research). We use conventional web",
+                " scraping techniques and standard analytical methods."
             ]
         },
         "evidence_expectations": {
             "question": "5. Do you have evidence about expectations (market research, focus groups, consultation)?",
             "yaml_key": "evidence_about_individual_expectations",
             "examples": [
-                " We conducted focus groups with 20 local residents who",
-                " confirmed they expect their public environmental comments",
-                " to be used for legitimate academic research."
+                " Industry surveys indicate that businesses expect their",
+                " publicly available information to be used for competitive",
+                " analysis and market research by other organizations."
             ]
         },
         "other_factors": {
             "question": "6. Are there other factors that would affect whether individuals expect this processing?",
             "yaml_key": "other_factors_affecting_expectations",
             "examples": [
-                " The data subjects have chosen to post in public forums",
-                " about environmental issues, suggesting they expect public",
-                " visibility and potential research use of their comments."
+                " The data subjects have chosen to publish information on",
+                " public websites and platforms, indicating acceptance of",
+                " public visibility and potential business use of their data."
             ]
         }
     }
@@ -861,8 +861,8 @@ def data_categorization_assessment(target_url: str, compliance_path: Path) -> st
     # Question 1: Basic data type check
     print("1. What type of information will you be collecting?")
     print("   Examples:")
-    print("   • NON-PERSONAL: Product prices, weather data, stock prices, news headlines")
-    print("   • PERSONAL: Names, email addresses, user comments, IP addresses, usernames")
+    print("   • NON-PERSONAL: Product prices, inventory levels, business hours, news headlines")
+    print("   • PERSONAL: Customer reviews with names, user profiles, contact information, usernames")
     print()
     
     data_examples = input("Please describe the specific type of data you'll be collecting: ").strip()
